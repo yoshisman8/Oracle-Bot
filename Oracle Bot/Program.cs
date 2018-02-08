@@ -4,6 +4,7 @@ using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using LiteDB;
 using System.Threading.Tasks;
 using OracleBot.Services;
 
@@ -34,6 +35,7 @@ namespace OracleBot
                     DefaultRunMode = RunMode.Async,     // Force all commands to run async
                     LogLevel = LogSeverity.Verbose
                 }))
+                .AddSingleton(new LiteDatabase(@"database.db"))
                 .AddSingleton<CommandHandler>()     // Add remaining services to the provider
                 .AddSingleton<LoggingService>()     
                 .AddSingleton<StartupService>()
