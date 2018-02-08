@@ -5209,23 +5209,23 @@
     ]
   },
   "packageFolders": {
-    "/home/harold/.nuget/packages/": {},
-    "/usr/share/dotnet/sdk/NuGetFallbackFolder": {}
+    "C:\\Users\\yoshisman8\\.nuget\\packages\\": {},
+    "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/home/harold/Projects/Oracle-Bot/Oracle Bot/Oracle Bot.csproj",
+      "projectUniqueName": "c:\\Users\\yoshisman8\\repos\\OracleBot\\Oracle Bot\\Oracle Bot.csproj",
       "projectName": "Oracle Bot",
-      "projectPath": "/home/harold/Projects/Oracle-Bot/Oracle Bot/Oracle Bot.csproj",
-      "packagesPath": "/home/harold/.nuget/packages/",
-      "outputPath": "/home/harold/Projects/Oracle-Bot/Oracle Bot/obj/",
+      "projectPath": "c:\\Users\\yoshisman8\\repos\\OracleBot\\Oracle Bot\\Oracle Bot.csproj",
+      "packagesPath": "C:\\Users\\yoshisman8\\.nuget\\packages\\",
+      "outputPath": "c:\\Users\\yoshisman8\\repos\\OracleBot\\Oracle Bot\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
-        "/usr/share/dotnet/sdk/NuGetFallbackFolder"
+        "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"
       ],
       "configFilePaths": [
-        "/home/harold/.nuget/NuGet/NuGet.Config"
+        "C:\\Users\\yoshisman8\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "netcoreapp2.0"
