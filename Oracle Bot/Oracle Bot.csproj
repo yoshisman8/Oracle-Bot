@@ -16,5 +16,7 @@
     <PackageReference Include="Newtonsoft.Json" Version="11.0.1-beta1"/>
     <PackageReference Include="EdCanHack.DiceNotation" Version="0.2.0"/>
     <PackageReference Include="EdCanHack.DiceNotation.MathNet" Version="0.2.0"/>
+    <PackageReference Include="Discord.Net.Commands" Version="1.0.2"/>
+    <PackageReference Include="Discord.Net.WebSocket" Version="1.0.2"/>
   </ItemGroup>
 </Project>
