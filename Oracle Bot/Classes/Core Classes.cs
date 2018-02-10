@@ -13,6 +13,7 @@ namespace OracleBot.Classes{
         public ulong Owner {get;set;}
         public string Name {get;set;} = "";
         public string Class {get;set;} = "";
+        public string Race {get;set;} = "";
         public int MaxHP {get;set;} = 10;
         public int CurrHP {get;set;} = 10;
         public string Image {get;set;} = "https://media.discordapp.net/attachments/357593658586955776/411586696145272845/question-mark-clipart-transparent-3.png?width=337&height=559";
@@ -332,5 +333,5 @@ namespace OracleBot.Classes{
     }
     public enum Status { Damage, Debuff, Heal, Misc, DmgOverTime, Restraint, ChanceOfSkip }
     public enum Stats { Might, Agility, Constitution, Perception, Magic, Luck, Fortitude, Protection, None}
-    public enum ItemType { Weapon, Armor, Charm}
+    public enum ItemType { Weapon, Armor, Charm, Consumable, Ammo}
 }

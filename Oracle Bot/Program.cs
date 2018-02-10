@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
+using Discord.Addons.Interactive;
 using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -37,7 +38,8 @@ namespace OracleBot
                 }))
                 .AddSingleton(new LiteDatabase(@"database.db"))
                 .AddSingleton<CommandHandler>()     // Add remaining services to the provider
-                .AddSingleton<LoggingService>()     
+                .AddSingleton<LoggingService>()   
+                .AddSingleton<InteractiveService>() 
                 .AddSingleton<StartupService>()
                 .AddSingleton<Random>()             // You get better random with a single instance than by creating a new one every time you need it
                 .AddSingleton(_config);

@@ -3,6 +3,7 @@ using Discord;
 using System.Threading.Tasks;
 using System.Text;
 using Discord.Commands;
+using Discord.Addons.Interactive;
 using LiteDB;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
@@ -12,10 +13,10 @@ using OracleBot.Classes;
 namespace OracleBot.Modules
 {
 
-    public class CharacterCreation : ModuleBase<SocketCommandContext>
+    public class CharacterCreation : InteractiveBase<SocketCommandContext>
     {
         public LiteDatabase Database {get;set;}
-        [Command("Char")]
+        [Command("Character"), Alias("C", "Char")]
         public async Task find([Remainder] string Name){
             var col = Database.GetCollection<Character>("Characters");
             var Items = Database.GetCollection<Item>("Items");
@@ -81,9 +82,28 @@ namespace OracleBot.Modules
                     sb.AppendLine("• "+I.Name+" (x"+x.Value+")");
                 }
                 embed.AddField("Inventory",sb);
-
-                
+                await ReplyAsync("",embed: embed.Build());
             }
+        }
+
+        [Command("AddChar"), Alias("Add-char", "create-char","Newchar")]
+        public async Task Create(string Name, string Race = "Racially undefined", string Class = "Wanderer"){
+            var col = Database.GetCollection<Character>("Characters");
+
+            if (col.Exists(x =>x.Name == Name.ToLower())){
+                await ReplyAsync("There's already a character with that name on the database, pick something else!");
+                return;
+            }
+            Character Char = new Character(){
+                Name = Name,
+                Class = Class,
+                Race = Race
+            };
+            col.Insert(Char);
+            col.EnsureIndex(x => x.Name, "LOWER($.Name)");
+            var msg = await ReplyAsync("Character **"+Name+"** Added to the Database.");
+            
+            
         }
     }
 }
