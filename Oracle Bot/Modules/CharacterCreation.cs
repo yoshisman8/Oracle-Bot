@@ -81,6 +81,8 @@ namespace OracleBot.Modules
                     sb.AppendLine("• "+I.Name+" (x"+x.Value+")");
                 }
                 embed.AddField("Inventory",sb);
+
+                
             }
         }
     }
