@@ -3,6 +3,7 @@ using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
 using System.Threading.Tasks;
 using System;
+using LiteDB;
 
 namespace OracleBot.Services
 {
@@ -13,17 +14,21 @@ namespace OracleBot.Services
         private readonly IConfigurationRoot _config;
         private readonly IServiceProvider _provider;
 
+        private LiteDatabase _database;
+
         // DiscordSocketClient, CommandService, IConfigurationRoot, and IServiceProvider are injected automatically from the IServiceProvider
         public CommandHandler(
             DiscordSocketClient discord,
             CommandService commands,
             IConfigurationRoot config,
-            IServiceProvider provider)
+            IServiceProvider provider,
+            LiteDatabase database)
         {
             _discord = discord;
             _commands = commands;
             _config = config;
             _provider = provider;
+            _database = database;
 
             _discord.MessageReceived += OnMessageReceivedAsync;
         }
@@ -41,7 +46,7 @@ namespace OracleBot.Services
             {
                 var result = await _commands.ExecuteAsync(context, argPos, _provider);     // Execute the command
 
-                if (!result.IsSuccess)     // If not successful, reply with the error.
+                if (!result.IsSuccess && result.Error != CommandError.UnknownCommand)     // If not successful, reply with the error.
                     await context.Channel.SendMessageAsync(result.ToString());
             }
         }

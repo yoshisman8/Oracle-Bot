@@ -16,6 +16,20 @@
           "lib/netstandard1.1/Discord.Addons.Interactive.dll": {}
         }
       },
+      "Discord.Addons.MpGame/1.0.0-rc5": {
+        "type": "package",
+        "dependencies": {
+          "Discord.Net.Commands": "1.0.2",
+          "Discord.Net.WebSocket": "1.0.2",
+          "System.ValueTuple": "4.4.0"
+        },
+        "compile": {
+          "lib/netstandard2.0/Discord.Addons.MpGame.dll": {}
+        },
+        "runtime": {
+          "lib/netstandard2.0/Discord.Addons.MpGame.dll": {}
+        }
+      },
       "Discord.Addons.Preconditions/1.0.0-rc2": {
         "type": "package",
         "dependencies": {
@@ -1675,6 +1689,19 @@
         "discord.addons.interactive.1.0.1.nupkg.sha512",
         "discord.addons.interactive.nuspec",
         "lib/netstandard1.1/Discord.Addons.Interactive.dll"
+      ]
+    },
+    "Discord.Addons.MpGame/1.0.0-rc5": {
+      "sha512": "yY56xtjppGKOOIMJ/HfC0de+ykuI+vXP6DfDpnP3OhluEvSldYsqhjL3WG/dlBR0oPY1aI04WlpLm3JyZ5e2mQ==",
+      "type": "package",
+      "path": "discord.addons.mpgame/1.0.0-rc5",
+      "files": [
+        "discord.addons.mpgame.1.0.0-rc5.nupkg.sha512",
+        "discord.addons.mpgame.nuspec",
+        "lib/netstandard1.3/Discord.Addons.MpGame.dll",
+        "lib/netstandard1.3/Discord.Addons.MpGame.xml",
+        "lib/netstandard2.0/Discord.Addons.MpGame.dll",
+        "lib/netstandard2.0/Discord.Addons.MpGame.xml"
       ]
     },
     "Discord.Addons.Preconditions/1.0.0-rc2": {
@@ -5192,6 +5219,7 @@
   "projectFileDependencyGroups": {
     ".NETCoreApp,Version=v2.0": [
       "Discord.Addons.Interactive >= 1.0.1",
+      "Discord.Addons.MpGame >= 1.0.0-rc5",
       "Discord.Addons.Preconditions >= 1.0.0-rc2",
       "Discord.Net >= 1.0.2",
       "Discord.Net.Commands >= 1.0.2",
@@ -5250,6 +5278,10 @@
           "Discord.Addons.Interactive": {
             "target": "Package",
             "version": "[1.0.1, )"
+          },
+          "Discord.Addons.MpGame": {
+            "target": "Package",
+            "version": "[1.0.0-rc5, )"
           },
           "Discord.Addons.Preconditions": {
             "target": "Package",
