@@ -1,0 +1,10 @@
+C:\Users\yoshisman8\repos\OracleBot\Oracle Bot\bin\Debug\netcoreapp2.0\Oracle Bot.deps.json
+C:\Users\yoshisman8\repos\OracleBot\Oracle Bot\bin\Debug\netcoreapp2.0\Oracle Bot.runtimeconfig.json
+C:\Users\yoshisman8\repos\OracleBot\Oracle Bot\bin\Debug\netcoreapp2.0\Oracle Bot.runtimeconfig.dev.json
+C:\Users\yoshisman8\repos\OracleBot\Oracle Bot\bin\Debug\netcoreapp2.0\Oracle Bot.dll
+C:\Users\yoshisman8\repos\OracleBot\Oracle Bot\bin\Debug\netcoreapp2.0\Oracle Bot.pdb
+C:\Users\yoshisman8\repos\OracleBot\Oracle Bot\obj\Debug\netcoreapp2.0\Oracle Bot.csproj.CoreCompileInputs.cache
+C:\Users\yoshisman8\repos\OracleBot\Oracle Bot\obj\Debug\netcoreapp2.0\Oracle Bot.AssemblyInfoInputs.cache
+C:\Users\yoshisman8\repos\OracleBot\Oracle Bot\obj\Debug\netcoreapp2.0\Oracle Bot.AssemblyInfo.cs
+C:\Users\yoshisman8\repos\OracleBot\Oracle Bot\obj\Debug\netcoreapp2.0\Oracle Bot.dll
+C:\Users\yoshisman8\repos\OracleBot\Oracle Bot\obj\Debug\netcoreapp2.0\Oracle Bot.pdb

@@ -7,7 +7,7 @@ using OracleBot.Classes;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace OracleBot
+namespace OracleBot.Classes
 {
     public static class Statics
     {

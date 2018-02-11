@@ -1,0 +1,17 @@
+02:51:17 [Info] Discord: Discord.Net v1.0.2 (API v6)
+02:51:18 [Verbose] Rest: GET voice/regions: 468.98 ms
+02:51:18 [Info] Gateway: Connecting
+02:51:18 [Verbose] Rest: GET gateway: 55.46 ms
+02:51:19 [Info] Gateway: Connected
+02:51:19 [Verbose] Gateway: Connected to Tabletop Dragon Den
+02:51:19 [Info] Gateway: Ready
+02:51:34 [Verbose] Rest: POST channels/311987726872215552/messages: 169.63 ms
+02:51:34 [Verbose] Command: Executed "AddChar" for Vyklade Starlight#0001 in Tabletop Dragon Den/off-topic
+02:51:37 [Verbose] Rest: POST channels/311987726872215552/messages: 108.85 ms
+02:51:37 [Verbose] Command: Executed "Character" for Vyklade Starlight#0001 in Tabletop Dragon Den/off-topic
+02:52:22 [Verbose] Rest: POST channels/311987726872215552/messages: 105.99 ms
+02:52:22 [Verbose] Command: Executed "DeleteCharacter" for GLW#8808 in Tabletop Dragon Den/off-topic
+02:52:33 [Verbose] Rest: POST channels/311987726872215552/messages: 125.5 ms
+02:52:33 [Verbose] Command: Executed "AddChar" for Vyklade Starlight#0001 in Tabletop Dragon Den/off-topic
+02:52:57 [Verbose] Rest: POST channels/311987726872215552/messages: 122.6 ms
+02:52:57 [Verbose] Command: Executed "DeleteCharacter" for demonofwestcity#3836 in Tabletop Dragon Den/off-topic

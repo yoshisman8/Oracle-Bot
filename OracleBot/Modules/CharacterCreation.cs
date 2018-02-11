@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using System.Text;
 using Discord.Commands;
 using Discord.Addons.Interactive;
+using Discord.WebSocket;
 using LiteDB;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
@@ -17,6 +18,7 @@ namespace OracleBot.Modules
     {
         public LiteDatabase Database {get;set;}
         [Command("Character"), Alias("C", "Char")]
+        [Summary("Usage: `.Char <Name>`")]
         public async Task find([Remainder] string Name){
             var col = Database.GetCollection<Character>("Characters");
             var Items = Database.GetCollection<Item>("Items");
@@ -44,6 +46,7 @@ namespace OracleBot.Modules
         }
 
         [Command("AddChar"), Alias("Add-char", "create-char","Newchar")]
+        [Summary("Usage: .Addchar <Name> [Race] [Class]`")]
         public async Task Create(string Name, string Race = "Racially undefined", string Class = "Wanderer"){
             var col = Database.GetCollection<Character>("Characters");
 
@@ -61,16 +64,40 @@ namespace OracleBot.Modules
             var msg = await ReplyAsync("Character **"+Name+"** Added to the Database.\n"+
             "You've been given 18 stat points and 1 skill point. Use `.StatUp Stat_To_Increase Ammount` and `.AddSkill Skill_Name` to use said points.");
         }
-        [Command("Test")]
-        public async Task Test(){
-            var test = new Character();
-            Database.DropCollection("Characters");
+        [Command("DeleteCharacter"), Alias("Delchar","Del-char","RemChar","RemoveCharacter")]
+        public async Task Test(string Name){
             var col = Database.GetCollection<Character>("Characters");
-            col.Insert(test);
-            col.EnsureIndex("Name","LOWER($.Name)");
-            var c = col.FindOne(x=> x.Name == "joey");
-            await ReplyAsync("", embed: Statics.BuildCharacterSheet(c,Context,Database));
-            col.Delete(c.Id);
+            var query = col.Include(x => x.Equipment)
+            .Find(x => x.Name.StartsWith(Name.ToLower()));
+            SocketGuildUser User = Context.User as SocketGuildUser;
+            if (query.Count() == 0){
+                await ReplyAsync("There are no character's whose name starts with \""+Name+"\".");
+                return;
+            }
+            if (query.Count() >= 2){
+                var sb = new StringBuilder();
+                foreach (var x in query){
+                    sb.Append(", `"+x.Name+"`");
+                }
+                await ReplyAsync("Multiple character's names with start with **"+Name+"**."+
+                "Please specify which one of these character's is the one you're lookig for: "+
+                sb.ToString().Substring(0,sb.Length -2)+".");
+                return;
+            }
+            else {
+                var character = query.FirstOrDefault();
+                if (character.Owner == Context.User.Id || User.GuildPermissions.ManageMessages){
+                    col.Delete(character.Id);
+                    await ReplyAsync("Character **"+character.Name+"** deleted from the database.");
+                }
+                else {
+                    await ReplyAsync("This isn't your character, you can't delete it!");
+                }
+            }
+        }
+        [Command("StatUp")]
+        public async Task StatUp(string Stat, int Amount){
+            
         }
     }
 }
