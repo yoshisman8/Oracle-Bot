@@ -1,5 +1,11 @@
+using LiteDB;
 using System;
 using System.Text;
+using Discord.Commands;
+using Discord;
+using OracleBot.Classes;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace OracleBot
 {
@@ -27,7 +33,59 @@ namespace OracleBot
         public static string ParseCoins (decimal money){
             int GP = (int)money;
             decimal SP = money %1.0m;
-            return SP+" SP"+GP+" GP";
+            return SP+"SP "+GP+"GP";
+        }
+        public static int ParseFort(int MAG){
+            return Convert.ToInt32(Math.Floor(Convert.ToDouble(MAG/4)));
+        }
+        public static Embed BuildCharacterSheet(Character character, SocketCommandContext Context, LiteDatabase database){
+            var Items = database.GetCollection<Item>("Items");
+            var sb = new StringBuilder();
+                var embed = new EmbedBuilder()
+                .WithTitle(character.Name+" the "+character.Race+" Level **"+character.Level.CurrLevel+"** "+character.Class)
+                .WithThumbnailUrl(character.Image)
+                .WithFooter(Context.Client.GetUser(character.Owner).Username,Context.Client.GetUser(character.Owner).GetAvatarUrl())
+                .AddInlineField("Ability Points "+ character.CheckPoints(1),
+                    "\\💪 "+character.AbilityScores.MGT.ToString()+" ("+character.BuildStat(Stats.Might)+")\n"+
+                    "\\🏃 "+character.AbilityScores.AGI.ToString()+" ("+character.BuildStat(Stats.Agility)+")\n"+
+                    "\\🔋 "+character.AbilityScores.CON.ToString()+" ("+character.BuildStat(Stats.Constitution)+")\n"+
+                    "\\👁 "+character.AbilityScores.PER.ToString()+" ("+character.BuildStat(Stats.Perception)+")\n"+
+                    "\\✨ "+character.AbilityScores.MAG.ToString()+" ("+character.BuildStat(Stats.Magic)+")\n"+
+                    "\\🍀 "+character.AbilityScores.LCK.ToString()+" ("+character.BuildStat(Stats.Luck)+")")
+                .AddInlineField("Equipment points",
+                    "Total \\🛡: "+character.BuildStat(Stats.Protection)+"\nTotal\\✨\\🛡: "+character.BuildStat(Stats.Fortitude)+
+                    "\nTotal \\⚔: "+character.BuildStat(Stats.None));
+
+                foreach (var x in character.Equipment){
+                    sb.AppendLine("["+x.ItemType+"] "+x.Name+" ("+x.Effects.FirstOrDefault().Dice+")");
+                }
+                if (sb.Length == 0) sb.Append("This character has no gear");
+                embed.AddInlineField("Gear",sb.ToString());
+                sb.Clear();
+                foreach (var x in character.Aliments){
+                    sb.AppendLine("• "+ x.Name+" ["+x.Turns+" turns]");
+                }
+                if (sb.Length == 0) sb.Append("This character has no aliments or afflictions");
+                embed.AddInlineField("Status Aliments",sb.ToString());
+                foreach (var x in character.Traits){
+                    sb.AppendLine("• "+x.Name);
+                }
+                if (sb.Length == 0) sb.Append("This character has no traits.");
+                embed.AddInlineField("Traits",sb.ToString());
+                sb.Clear();
+                foreach (var x in character.Skill){
+                    sb.AppendLine("• "+x.Name+"["+Statics.ToRoman(x.Level)+"]");
+                }
+                if (sb.Length == 0) sb.Append("This character has no Skills.");
+                embed.AddField("Skills "+character.CheckPoints(),sb.ToString());
+                sb.Clear();
+                sb.AppendLine(Statics.ParseCoins(character.Money));
+                foreach(var x in character.Inventory){
+                    var I = Items.FindById(x.Key);
+                    sb.AppendLine("• "+I.Name+" (x"+x.Value+")");
+                }
+                embed.AddField("Inventory",sb);
+                return embed.Build();
         }
     }
 }

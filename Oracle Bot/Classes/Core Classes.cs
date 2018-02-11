@@ -10,10 +10,10 @@ namespace OracleBot.Classes{
     public class Character{
         [BsonId]
         public int Id {get;set;}
-        public ulong Owner {get;set;}
-        public string Name {get;set;} = "";
-        public string Class {get;set;} = "";
-        public string Race {get;set;} = "";
+        public ulong Owner {get;set;} = 165212654388903936;
+        public string Name {get;set;} = "Joey";
+        public string Class {get;set;} = "Wanderer";
+        public string Race {get;set;} = "Racially Ambigous";
         public int MaxHP {get;set;} = 10;
         public int CurrHP {get;set;} = 10;
         public string Image {get;set;} = "https://media.discordapp.net/attachments/357593658586955776/411586696145272845/question-mark-clipart-transparent-3.png?width=337&height=559";
@@ -262,10 +262,10 @@ namespace OracleBot.Classes{
         public string CheckPoints(int Type = 0){
             switch (Type){
                 case 1:
-                    if (this.Level.StatPoints > 0) return "Stat points remaining: "+Level.StatPoints;
+                    if (this.Level.StatPoints > 0) return "(Stat points remaining: "+Level.StatPoints+")";
                     else return "";
                 default:
-                    if (this.Level.SkillPoints > 0) return "Skill points remaining: "+Level.SkillPoints;
+                    if (this.Level.SkillPoints > 0) return "(Skill points remaining: "+Level.SkillPoints+")";
                     else return "";
             }
 
@@ -285,14 +285,7 @@ namespace OracleBot.Classes{
         public int PER {get;set;} = 0;
         public int MAG {get;set;} = 0;
         public int LCK {get;set;} = 0;
-        public int Fort { 
-            get {
-                return Convert.ToInt32(Math.Floor(Convert.ToDouble(MAG/4)));
-            } 
-            set{
-                Fort = value;
-                }
-        }
+        public int Fort {get;set;} = 0;
         public int Prot {get;set;} = 0;
 
     }
