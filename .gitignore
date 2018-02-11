@@ -21,3 +21,9 @@ Oracle Bot/obj/Debug/netcoreapp2.0/Oracle Bot.pdb
 Oracle Bot/obj/Debug/netcoreapp2.0/Oracle Bot.csproj.FileListAbsolute.txt
 Oracle Bot/bin/Debug/netcoreapp2.0/logs
 Oracle Bot/database.db
+OracleBot/obj
+OracleBot/bin
+OracleBot/obj/Oracle Bot.csproj.nuget.cache
+OracleBot/obj/Oracle Bot.csproj.nuget.g.props
+OracleBot/obj/project.assets.json
+OracleBot/obj/Debug/netcoreapp2.0/Oracle Bot.csproj.CoreCompileInputs.cache
