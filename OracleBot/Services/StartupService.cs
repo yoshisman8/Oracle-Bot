@@ -32,6 +32,7 @@ namespace OracleBot.Services
                 throw new Exception("Please enter your bot's token into the `_configuration.json` file found in the applications root directory.");
 
             await _discord.LoginAsync(TokenType.Bot, discordToken);     // Login to discord
+            await _discord.SetGameAsync(_config["status"]); 
             await _discord.StartAsync();                                // Connect to the websocket
 
             await _commands.AddModulesAsync(Assembly.GetEntryAssembly());     // Load commands and modules into the command service

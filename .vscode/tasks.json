@@ -7,7 +7,7 @@
             "type": "process",
             "args": [
                 "build",
-                "${workspaceFolder}/Oracle Bot/Oracle Bot.csproj"
+                "${workspaceFolder}/OracleBot/OracleBot.csproj"
             ],
             "problemMatcher": "$msCompile"
         }

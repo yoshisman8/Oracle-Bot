@@ -42,7 +42,7 @@ namespace OracleBot.Classes
             var Items = database.GetCollection<Item>("Items");
             var sb = new StringBuilder();
                 var embed = new EmbedBuilder()
-                .WithTitle(character.Name+" the "+character.Race+" Level **"+character.Level.CurrLevel+"** "+character.Class)
+                .WithTitle(character.Name+" the Level **"+character.Level.CurrLevel+"** "+character.Race+" "+character.Class)
                 .WithThumbnailUrl(character.Image)
                 .WithFooter(Context.Client.GetUser(character.Owner).Username,Context.Client.GetUser(character.Owner).GetAvatarUrl())
                 .AddInlineField("Ability Points "+ character.CheckPoints(1),
@@ -86,6 +86,50 @@ namespace OracleBot.Classes
                 }
                 embed.AddField("Inventory",sb);
                 return embed.Build();
+        }
+        public static Embed BuildSkill(Skill skill){
+            var sb = new StringBuilder();
+            var embed = new EmbedBuilder()
+                .WithTitle(skill.Name+" ["+ToRoman(skill.Level)+"]")
+                .WithDescription("["+skill.Target+"] [Cooldown "+skill.Cooldown.MaxTime+" turns]\n"+ skill.Description);
+            foreach(var x in skill.Effects){
+                sb.AppendLine(EffectBuilder(x));
+            }
+            if (sb.Length != 0) embed.AddField("Effects",sb.ToString());
+            return embed.Build();
+        }
+        public static string EffectBuilder(Effect effect){
+            var sb = new StringBuilder();
+            sb.Append("• "+effect.Name);
+            if (effect.type == Status.Damage){
+                sb.AppendLine("  - Damage ("+effect.Dice+")");
+            }
+            else if (effect.type == Status.Debuff){
+                if (int.Parse(effect.Dice) < 0){
+                    sb.AppendLine("  - Debuff ("+effect.Dice+" "+effect.AffectedStat+")");
+                    sb.AppendLine("  - Duration: "+effect.Turns+" turns)");
+                }
+                else{
+                    sb.AppendLine("  - Buff (+"+effect.Dice+" "+effect.AffectedStat+")");
+                    sb.AppendLine("  - Duration: "+effect.Turns+" turns)");
+                }
+            }
+            else if (effect.type == Status.DmgOverTime){
+                sb.AppendLine("  - Damage ("+effect.Dice+" per turn while afflicted)");
+            }
+            else if (effect.type == Status.ChanceOfSkip){
+                sb.AppendLine("  - 50% chance of skiped turn");
+            }
+            else if(effect.type == Status.Heal){
+                sb.AppendLine("  - Heals "+effect.Dice+" HP");
+            }
+            else if(effect.type == Status.Restraint){
+                sb.AppendLine("  - Skips the next "+effect.Dice+" turns");
+            }
+            else {
+                sb.AppendLine("  - Causes a RP-related affliction.");
+            }
+            return sb.ToString();
         }
     }
 }

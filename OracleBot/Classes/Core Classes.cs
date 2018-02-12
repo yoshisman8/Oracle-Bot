@@ -184,18 +184,12 @@ namespace OracleBot.Classes{
                             Total += int.Parse(y.Dice);
                         }
                     }
-                    var effects = Aliments.Where(x => x.type == Status.Debuff && x.AffectedStat == stat);
-                    if (effects.Count() == 0) {
-
-                        var subtotal = Math.Floor(Convert.ToDouble(Total/4));
-                        if (subtotal <= 0) return "0";
-                        else return subtotal.ToString();
+                    foreach (var x in Aliments.Where(x => x.type == Status.Debuff && x.AffectedStat == stat)) {
+                        Total =+ int.Parse(x.Dice);
                     }
-                    else{
-                        foreach (var x in effects){
-                            Total += int.Parse(x.Dice);
-                        }
-                        return (Total/4).ToString();
+                    {
+                        var subtotal = Math.Floor(Convert.ToDouble(Total/2));
+                        return subtotal.ToString();
                     }
             }
             else if (stat == Stats.Fortitude){
@@ -270,6 +264,10 @@ namespace OracleBot.Classes{
             }
 
         }
+        public void Update(LiteDatabase database){
+            var col = database.GetCollection<Character>("Characters");
+            col.Update(this);
+        }
     }
 
     public class Level {
@@ -290,22 +288,23 @@ namespace OracleBot.Classes{
 
     }
     public class Skill{
-        public string Name {get;set;} = "";
-        public string Description {get;set;} = "";
+        public string Name {get;set;} = " ";
+        public string Description {get;set;} = " ";
         public int Level {get;set;} = 1;
         public Cooldown Cooldown {get;set;} = new Cooldown();
         public List<Effect> Effects {get;set;}= new List<Effect>(){};
+        public Target Target {get;set;} = Target.Single;
     }
     public class Trait{
-        public string Name {get;set;} = "";
-        public string Description {get;set;} = "";
+        public string Name {get;set;} = " ";
+        public string Description {get;set;} = " ";
         public List<Effect> Effects {get;set;}= new List<Effect>(){};
     }
     public class Effect {
-        public string Name {get;set;} = "";
-        public string Description {get;set;} = "";
+        public string Name {get;set;} = " ";
+        public string Description {get;set;} = " ";
         public Status type {get;set;} = Status.Misc;
-        public string Dice {get;set;} = "";
+        public string Dice {get;set;} = " ";
         public int Turns {get;set;} = 1;
         public Stats AffectedStat {get;set;} = Stats.None;
     }
@@ -317,14 +316,15 @@ namespace OracleBot.Classes{
     public class Item {
         [BsonId]
         public int ID {get;set;}
-        public string Name {get;set;} = "";
+        public string Name {get;set;} = " ";
         public string Image {get;set;} = "https://media.discordapp.net/attachments/357593658586955776/411586696145272845/question-mark-clipart-transparent-3.png?width=337&height=559";
-        public string Description {get;set;} = "";
+        public string Description {get;set;} = " ";
         public ItemType ItemType {get;set;} = ItemType.Charm;
         public int Value {get;set;} = 0;
         public List<Effect> Effects {get;set;} = new List<Effect>(){};
     }
     public enum Status { Damage, Debuff, Heal, Misc, DmgOverTime, Restraint, ChanceOfSkip }
     public enum Stats { Might, Agility, Constitution, Perception, Magic, Luck, Fortitude, Protection, None}
-    public enum ItemType { Weapon, Armor, Charm, Consumable, Ammo}
+    public enum ItemType { Weapon, Armor, Charm, Consumable, Ammo, Shield}
+    public enum Target {Self, All, Single}
 }
