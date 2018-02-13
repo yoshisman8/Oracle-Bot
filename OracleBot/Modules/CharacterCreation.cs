@@ -159,30 +159,34 @@ namespace OracleBot.Modules
                     C.Level.StatPoints-= Amount;
                     S = Stats.Might;
                 }
-                if (Stat.ToLower() == "agi"){
+                else if (Stat.ToLower() == "agi"){
                     C.AbilityScores.AGI+= Amount;
                     C.Level.StatPoints-= Amount;
                     S = Stats.Agility;
                 }
-                if (Stat.ToLower() == "con"){
+                else if (Stat.ToLower() == "con"){
                     C.AbilityScores.CON+= Amount;
                     C.Level.StatPoints-= Amount;
                     S = Stats.Constitution;
                 }
-                if (Stat.ToLower() == "per"){
+                else if (Stat.ToLower() == "per"){
                     C.AbilityScores.PER+= Amount;
                     C.Level.StatPoints-= Amount;
                     S = Stats.Perception;
                 }
-                if (Stat.ToLower() == "mag"){
+                else if (Stat.ToLower() == "mag"){
                     C.AbilityScores.MAG+= Amount;
                     C.Level.StatPoints-= Amount;
                     S = Stats.Magic;
                 }
-                if (Stat.ToLower() == "lck"){
+                else if (Stat.ToLower() == "lck"){
                     C.AbilityScores.LCK+= Amount;
                     C.Level.StatPoints-= Amount;
                     S = Stats.Luck;
+                }
+                else {
+                    await ReplyAsync("This isn't a valid stat! Stats are `MGT`, `AGI`, `CON`, `PER`, `MAG` and `LCK`");
+                    return;
                 }
                 var col = Database.GetCollection<Character>("Characters");
                 if (Amount < 0){
@@ -277,14 +281,194 @@ namespace OracleBot.Modules
         public async Task<Effect> NewEffect(InteractiveService interactive, SocketCommandContext context, Effect effect = null){
             if (effect == null){
                 effect = new Effect();
-                var msg = context.Channel.SendMessageAsync("This is the effect creator, here you can add some power to your skills/gears/traits/etc.\n"+
+                var msg = await context.Channel.SendMessageAsync("This is the effect creator, here you can add some power to your skills/gears/traits/etc.\n"+
                     "Let's start simple, What's the name of this effect? (Note, names only matter if the effect is not immediate (such as buffs and debuffs).\n"+
                     "(Remember you can say \"Cancel\" to cancel this creation process.");
                 var reply = await interactive.NextMessageAsync(context);
                 if (reply.Content.ToLower() == "cancel") return null;
-                else effect.Name = reply.Content;
+                else {
+                    effect.Name = reply.Content;
+                    await msg.DeleteAsync();
+                    }
             }
-
+            for (bool FirstLoop = true; FirstLoop == false;){
+                var msg = await context.Channel.SendMessageAsync("Let's start making this effect. First things first. "+
+                "What is this effect's **type**? \nUse the guide below to see what each type means and reply with its corresponding letter."
+                ,embed: Statics.EffectInfo());
+                var reply = await interactive.NextMessageAsync(context);
+                switch (reply.Content.ToLower()){
+                    case "a":
+                        effect.type = Status.Damage;
+                        FirstLoop = false;
+                        break;
+                    case "b":
+                        effect.type = Status.Debuff;
+                        FirstLoop = false;
+                        break;
+                    case "c":
+                        effect.type = Status.DmgOverTime;
+                        FirstLoop = false;
+                        break;
+                    case "d":
+                        effect.type = Status.Heal;
+                        FirstLoop = false;
+                        break;
+                    case "e":
+                        effect.type = Status.Restraint;
+                        FirstLoop = false;
+                        break;
+                    case "f":
+                        effect.type = Status.ChanceOfSkip;
+                        FirstLoop = false;
+                        break;
+                    case "g":
+                        effect.type = Status.Misc;
+                        FirstLoop = false;
+                        break;
+                    case "cancel":
+                        return null;
+                    default:
+                        await reply.DeleteAsync();
+                        break;
+                }
+                for (bool SecondLoop = true; SecondLoop == false;){
+                    await msg.ModifyAsync(x => x.Embed = Statics.EmbedEffect(effect));
+                    if (effect.type == Status.Damage){
+                        await msg.ModifyAsync(x => x.Content = "What's the damage Dice (Or flat damage number) for this effect?\n"+
+                            "You can add X where the skill's level would go (ie: Xd5 = as many d5's as the skill's level)");
+                        reply = await interactive.NextMessageAsync(context);
+                        if (reply.Content.ToLower()=="cancel") return null;
+                        var valid = System.Text.RegularExpressions.Regex.IsMatch(reply.Content.ToLower(), @"^[d-dx-xk-k0-9\+\-\s\*]*$");
+                        if (!valid){
+                            await interactive.ReplyAndDeleteAsync(context,"This is not a valid dice expression!", timeout: TimeSpan.FromSeconds(5));
+                        }
+                        else if (valid){
+                            effect.Dice = reply.Content.ToLower();
+                            await msg.ModifyAsync(x => x.Content = "What type of damage is this? (ie: Blunt, Piercing, Slashing, Etc.)\n"+
+                            "Note: System messages will read as `Character did X <Damage type> to <target>`.");
+                            reply = await interactive.NextMessageAsync(context);
+                            if (reply.Content.ToLower()=="cancel") return null;
+                            effect.Description = reply.Content;
+                            effect.Turns = 0;
+                        }
+                    }
+                    if (effect.type == Status.DmgOverTime){
+                        await msg.ModifyAsync(x => x.Content = "What's the damage Dice (Or flat damage number) for this effect?\n"+
+                            "You can add X where the skill's level would go (ie: Xd5 = as many d5's as the skill's level)");
+                        reply = await interactive.NextMessageAsync(context);
+                        if (reply.Content.ToLower()=="cancel") return null;
+                        var valid = System.Text.RegularExpressions.Regex.IsMatch(reply.Content.ToLower(), @"^[d-dx-xk-k0-9\+\-\s\*]*$");
+                        if (!valid){
+                            await interactive.ReplyAndDeleteAsync(context,"This is not a valid dice expression!", timeout: TimeSpan.FromSeconds(5));
+                        }
+                        else if (valid){
+                            effect.Dice = reply.Content.ToLower();
+                            await msg.ModifyAsync(x => x.Content = "What type of damage is this? (ie: Blunt, Piercing, Slashing, Etc.)\n"+
+                            "Note: System messages will read as `Character did X <Damage type> to <target>`.");
+                            reply = await interactive.NextMessageAsync(context);
+                            if (reply.Content.ToLower()=="cancel") return null;
+                            effect.Description = reply.Content;
+                            for (bool B = true; B == false;){
+                                await msg.ModifyAsync(y => y.Content = "How many turns does this effect last?");
+                                reply = await interactive.NextMessageAsync(context);
+                                if (!int.TryParse(reply.Content, out int i)){
+                                    await interactive.ReplyAndDeleteAsync(Context,"This is not a number!",timeout: TimeSpan.FromSeconds(5));
+                                }
+                                else{
+                                    effect.Turns = int.Parse(reply.Content);
+                                    B = false;
+                                }
+                            }
+                        }
+                    }
+                    if (effect.type == Status.Heal){
+                        await msg.ModifyAsync(x => x.Content = "What's the Healing Dice (Or flat number) for this effect?\n"+
+                            "You can add X where the skill's level would go (ie: Xd5 = as many d5's as the skill's level)");
+                        reply = await interactive.NextMessageAsync(context);
+                        if (reply.Content.ToLower()=="cancel") return null;
+                        var valid = System.Text.RegularExpressions.Regex.IsMatch(reply.Content.ToLower(), @"^[d-dx-xk-k0-9\+\-\s\*]*$");
+                        if (!valid){
+                            await interactive.ReplyAndDeleteAsync(context,"This is not a valid dice expression!", timeout: TimeSpan.FromSeconds(5));
+                        }
+                        else if (valid){
+                            effect.Dice = reply.Content;
+                        }
+                    }
+                    if (effect.type == Status.Restraint){
+                        for (bool B = true; B == false;){
+                            await msg.ModifyAsync(y => y.Content = "How many turns does this effect last?");
+                            reply = await interactive.NextMessageAsync(context);
+                            if (!int.TryParse(reply.Content, out int i)){
+                                await interactive.ReplyAndDeleteAsync(Context,"This is not a number!",timeout: TimeSpan.FromSeconds(5));
+                            }
+                            else{
+                                effect.Turns = int.Parse(reply.Content);
+                                B = false;
+                            }
+                        }
+                    }
+                    if (effect.type == Status.ChanceOfSkip){
+                        for (bool B = true; B == false;){
+                            await msg.ModifyAsync(y => y.Content = "How many turns does this effect last?");
+                            reply = await interactive.NextMessageAsync(context);
+                            if (!int.TryParse(reply.Content, out int i)){
+                                await interactive.ReplyAndDeleteAsync(Context,"This is not a number!",timeout: TimeSpan.FromSeconds(5));
+                            }
+                            else{
+                                effect.Turns = int.Parse(reply.Content);
+                                B = false;
+                            }
+                        }
+                    }
+                    if (effect.type == Status.Misc){
+                        await msg.ModifyAsync(y => y.Content = "What does this effect do (This is a RP only effect and will have no bearing on stats).");
+                        reply = await interactive.NextMessageAsync(context);
+                        if (reply.Content.ToLower()=="cancel") return null;
+                        effect.Description = reply.Content;
+                        for (bool B = true; B == false;){
+                            await msg.ModifyAsync(y => y.Content = "How many turns does this effect last?");
+                            reply = await interactive.NextMessageAsync(context);
+                            if (!int.TryParse(reply.Content, out int i)){
+                                await interactive.ReplyAndDeleteAsync(Context,"This is not a number!",timeout: TimeSpan.FromSeconds(5));
+                            }
+                            else{
+                                effect.Turns = int.Parse(reply.Content);
+                                B = false;
+                            }
+                        }
+                    }
+                    if (effect.type == Status.Debuff){
+                        for (bool b = true;b == false;){
+                            await msg.ModifyAsync(y => y.Content = "What stat does this effect alter?\n"+
+                            "You can choose between the following stats: Might, Agility, Constitution, Perception, Magic, Luck, Fortitude or Protection.");
+                            reply = await interactive.NextMessageAsync(context);
+                            if (reply.Content.ToLower()=="cancel") return null;
+                            switch (reply.Content.ToLower()){
+                                case "might":
+                                    effect.AffectedStat = Stats.Might;
+                                    b = false;
+                                    break;
+                                case "agility":
+                                    effect.AffectedStat = Stats.Agility;
+                                    b = false;
+                                    break;
+                                case "constitution":
+                                    effect.AffectedStat = Stats.Constitution;
+                                    b = false;
+                                    break;
+                                case "perception":
+                                    effect.AffectedStat = Stats.Perception;
+                                    b = false;
+                                    break;
+                                case "magic":
+                                    effect.AffectedStat = Stats.Magic;
+                                    b = false;
+                                    break;
+                            }
+                        }
+                    }
+                }
+            }
             return effect;
         }
     }

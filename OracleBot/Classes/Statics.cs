@@ -131,5 +131,57 @@ namespace OracleBot.Classes
             }
             return sb.ToString();
         }
+        public static Embed EmbedEffect(Effect effect){
+            var embed = new EmbedBuilder()
+            .WithTitle(effect.Name);
+            if (effect.type == Status.Damage){
+                embed.AddField("Flat Damage","Damage Dice: "+effect.Dice+
+                    "\nDamage Type: "+effect.Description);
+            }
+            if (effect.type == Status.Debuff){
+                if (int.Parse(effect.Dice) < 0){
+                    embed.AddField("Stat reduction","Stat being reduced: "+effect.AffectedStat+
+                    "\nDuration of the debuff: "+effect.Turns+" turns.\n"+
+                    "Intensity of the debuff: "+effect.Dice);
+                }
+                else{
+                    embed.AddField("Stat increment","Stat being augmented: "+effect.AffectedStat+
+                    "\nDuration of the buff: "+effect.Turns+" turns.");
+                }
+            }
+            if (effect.type == Status.DmgOverTime){
+                embed.AddField("Damage over time","Damage: "+effect.Dice+
+                    "\nDamage Type: "+effect.Description +
+                    "\nDuration: "+effect.Turns+" turns.");
+            }
+            if (effect.type == Status.Heal){
+                embed.AddField("Healing","Health recovered: "+effect.Dice+" HealthPoints.");
+            }
+            if (effect.type == Status.Restraint){
+                embed.AddField("Prevent's target from acting on combat","Duration: "+effect.Turns+" turns.");
+            }
+            if (effect.type == Status.ChanceOfSkip){
+                embed.AddField("50% Chance of preventing target's turn.","Duration: "+effect.Turns+" turns.");
+            }
+            if (effect.type == Status.Misc){
+                embed.AddField("Special effect",effect.Description);
+            }
+            return embed.Build();
+        }
+        public static Embed EffectInfo(){
+            var embed = new EmbedBuilder()
+            .WithTitle("About Effect Types")
+            .WithDescription("Mechanically, effects work in one of 7 ways. This is a brief summary of each one.")
+            .AddField("A) Damage/Flat Damage","This type of effect is as simple as it gets. It rolls a user-defined dice roll and applies that damage to its target.")
+            .AddField("B) Buff/Debuff","This type of effect applies a buff (if value is positive) or a debuff (if value is negative) to one of the stats of the target.\n"+
+            "Note that stats also include things such as Fortitude, Hit chance and Protection.")
+            .AddField("C) Damage Over Time","This type of effects deal no initial damage, but leave the target receiving user-defined damage for user-defined duration in turns.\n"+
+            "This effect type covers things like poison, burning, lingering magic damage, and anything that does damage over time.")
+            .AddField("D) Heal","This effect simply restores a user-defined roll of HealthPoints to the target.")
+            .AddField("E) Restraint","This effect skips the target's turn for the duration of the effect. Covers things such as petrify, entanglement and the like.")
+            .AddField("F) Chance Of Skip","This one is a peculiar effect. It gives the target a 50% (1d2) to have its turn skipped for the duration of the effect.")
+            .AddField("G) Miscellaneus","This type of effect has no effect on the target's stats, but is useful for giving more RP-related effects. Effect expires after an user-defined about of turns.");
+            return embed.Build();
+        }
     }
 }
