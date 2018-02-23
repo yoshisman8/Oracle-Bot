@@ -199,6 +199,7 @@ namespace OracleBot.Modules
                 }
             }
         }
+        [Command("SetImage")]
         public async Task SetImage([Remainder]string url){
             var character = PlayerLocking.GetLock(Database,Context.User.Id);
             if (character == null){
@@ -227,9 +228,11 @@ namespace OracleBot.Modules
                     Name = Skill_Name
                 };
                 var msg = await ReplyAsync("Starting skill creation menu...");
-                for (bool A = true; A == false;){
-                    if (skill.Name == ""){
-                        for (bool A1 = true; A1 == false;){
+                bool A = true;
+                while (A){
+                    if (Skill_Name == ""){
+                        bool A1 = true;
+                        while (A1){
                             await msg.ModifyAsync(x => x.Content = "It seems you left the Skill name empty. What's the name for this skill? (You can say \"Cancel\" to stop creating the this skill at any time.");
                             var Areply = await NextMessageAsync();
                             if (Areply.Content.ToLower() == "cancel") return;
@@ -259,7 +262,6 @@ namespace OracleBot.Modules
                             A = false;
                             await reply.DeleteAsync();
                     }
-                    await reply.DeleteAsync();
                     if (A == false){
                         await msg.ModifyAsync(x => x.Content= "Do you want to add a description to your skill? Write it down now or respond \"Skip\" to not add one.");
                         reply = await NextMessageAsync();
@@ -277,19 +279,54 @@ namespace OracleBot.Modules
                     await msg.ModifyAsync(x => x.Embed = Statics.BuildSkill(skill));
                     var reply = await NextMessageAsync();
                     if (reply.Content.ToLower() == "cancel") return;
-                    if (reply.Content.ToLower() == "done") { B = false;}
+                    if (reply.Content.ToLower() == "done") { 
+                        B = false;
+                        character.Update(Database);
+                        }
                     else if (reply.Content.ToLower() == "add"){
                         await msg.ModifyAsync(x => x.Embed = null);
                         await msg.ModifyAsync(x => x.Content = "Please follow the Effect creation menu now.");
+                        await reply.DeleteAsync();
                         var effect = await NewEffect(this.Interactive,Context);
                         if (effect != null) {
                             skill.Effects.Add(effect);
+                            --character.Level.SkillPoints;
                             }
                     }
                 }
                 character.Skill.Add(skill);
                 character.Update(Database);
                 await ReplyAsync("Skill "+skill.Name+" created successfully!"); return;
+            }
+        }
+
+        [Command("RemSkill"), Alias("delskill", "forgetskill", "RemoveSkill","Delete-Skill","Forget-Skill", "Rem-Skill", "del-skill")]
+        public async Task RemSkill(string Name){
+            var character = PlayerLocking.GetLock(Database,Context.User.Id);
+            if (character == null){
+                await ReplyAndDeleteAsync("You're not locked to any character!");
+                return;
+            }
+            else {
+                var skills = character.Skill.Where(x => x.Name.ToLower().StartsWith(Name.ToLower()));
+                if (skills.Count() == 0){
+                    await ReplyAndDeleteAsync(character.Name+" doesn't have a skill whose name starts with \""+Name+"\".");
+                    return;
+                }
+                else if (skills.Count() >= 2){
+                    var sb = new StringBuilder();
+                    sb.Append(character.Name+" has multiple skills that start with \""+Name+"\". Please specify from one of the following: ");
+                    foreach(var x in skills){
+                        sb.Append("`"+x.Name+"`, ");
+                    }
+                    await ReplyAsync(sb.ToString().Substring(0,sb.Length -2)+".");
+                    return;
+                }
+                else {
+                    character.Skill.Remove(skills.FirstOrDefault());
+                    character.Update(Database);
+                    await ReplyAsync(character.Name+" no longer has the skill \""+skills.FirstOrDefault().Name+"\".");
+                }
             }
         }
         public async Task<Effect> NewEffect(InteractiveService interactive, SocketCommandContext context, Effect effect = null){
@@ -303,9 +340,11 @@ namespace OracleBot.Modules
                 else {
                     effect.Name = reply.Content;
                     await msg.DeleteAsync();
+                    await reply.DeleteAsync();
                     }
             }
-            for (bool FirstLoop = true; FirstLoop == false;){
+            bool FirstLoop = true;
+            while (FirstLoop){
                 var msg = await context.Channel.SendMessageAsync("Let's start making this effect. First things first. "+
                 "What is this effect's **type**? \nUse the guide below to see what each type means and reply with its corresponding letter."
                 ,embed: Statics.EffectInfo());
@@ -352,7 +391,8 @@ namespace OracleBot.Modules
                         await reply.DeleteAsync();
                         break;
                 }
-                for (bool SecondLoop = true; SecondLoop == false;){
+                bool SecondLoop = true;
+                while (SecondLoop){
                     await msg.ModifyAsync(x => x.Embed = Statics.EmbedEffect(effect));
                     if (effect.type == Status.Damage){
                         await msg.ModifyAsync(x => x.Content = "What's the damage Dice (Or flat damage number) for this effect?\n"+
@@ -394,7 +434,8 @@ namespace OracleBot.Modules
                             if (reply.Content.ToLower()=="cancel") return null;
                             effect.Description = reply.Content;
                             await reply.DeleteAsync();
-                            for (bool B = true; B == false;){
+                            bool B = true;
+                            while (B){
                                 await msg.ModifyAsync(y => y.Content = "How many turns does this effect last?\n"+
                             "Use 0 to indicate that this effect's duration is based on its corresponding skill level (not applicable for items or weapons)");
                                 reply = await interactive.NextMessageAsync(context);
@@ -427,7 +468,8 @@ namespace OracleBot.Modules
                         }
                     }
                     if (effect.type == Status.Restraint){
-                        for (bool B = true; B == false;){
+                            bool B = true;
+                            while (B){
                             await msg.ModifyAsync(y => y.Content = "How many turns does this effect last?\n"+
                             "Use 0 to indicate that this effect's duration is based on its corresponding skill level (not applicable for items or weapons)");
                             reply = await interactive.NextMessageAsync(context);
@@ -444,7 +486,8 @@ namespace OracleBot.Modules
                         }
                     }
                     if (effect.type == Status.ChanceOfSkip){
-                        for (bool B = true; B == false;){
+                            bool B = true;
+                            while (B){
                             await msg.ModifyAsync(y => y.Content = "How many turns does this effect last?\n"+
                             "Use 0 to indicate that this effect's duration is based on its corresponding skill level (not applicable for items or weapons)");
                             reply = await interactive.NextMessageAsync(context);
@@ -465,7 +508,8 @@ namespace OracleBot.Modules
                         reply = await interactive.NextMessageAsync(context);
                         if (reply.Content.ToLower()=="cancel") return null;
                         effect.Description = reply.Content;
-                        for (bool B = true; B == false;){
+                        bool B = true;
+                        while (B){
                             await msg.ModifyAsync(y => y.Content = "How many turns does this effect last?");
                             reply = await interactive.NextMessageAsync(context);
                             if (!int.TryParse(reply.Content, out int i)){
@@ -481,7 +525,8 @@ namespace OracleBot.Modules
                         }
                     }
                     if (effect.type == Status.Debuff){
-                        for (bool b = true;b == false;){
+                            bool b = true;
+                            while (b){
                             await msg.ModifyAsync(y => y.Content = "What stat does this effect alter?\n"+
                             "You can choose between the following stats: Might, Agility, Constitution, Perception, Magic, Luck, Fortitude or Protection.");
                             reply = await interactive.NextMessageAsync(context);
@@ -548,7 +593,8 @@ namespace OracleBot.Modules
                         }
                     }
                 }
-                for (bool confirm = true; confirm == false;){
+                bool confirm = true;
+                while (confirm){
                     await msg.ModifyAsync(x => x.Embed = Statics.EmbedEffect(effect));
                     await msg.ModifyAsync(x => x.Content = "Is this ok? (y/n)");
                     reply = await interactive.NextMessageAsync(context,timeout: TimeSpan.FromSeconds(5));

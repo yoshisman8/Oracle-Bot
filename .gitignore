@@ -30,3 +30,4 @@ OracleBot/obj/Debug/netcoreapp2.0/Oracle Bot.csproj.CoreCompileInputs.cache
 .vscode/launch.json
 .vscode/tasks.json
 OracleBot/database.db
+OracleBot/_configuration.json
