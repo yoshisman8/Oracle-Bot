@@ -240,7 +240,7 @@ namespace OracleBot.Classes{
                             foreach (var y in x.Effects.Where(z => z.AffectedStat == stat)){
                                 Total += int.Parse(y.Dice);
                             }
-                            Total += x.Value;
+                            Total += x.HitValue;
                         }
                         return Total.ToString();
                     }
@@ -248,7 +248,7 @@ namespace OracleBot.Classes{
             else {
                 var hit = this.Level.CurrLevel;
                 foreach (var x in this.Equipment.Where(x => x.ItemType == ItemType.Weapon)){
-                    hit += x.Value;
+                    hit += x.HitValue;
                 }
                 return hit.ToString();
             }
@@ -320,7 +320,8 @@ namespace OracleBot.Classes{
         public string Image {get;set;} = "https://media.discordapp.net/attachments/357593658586955776/411586696145272845/question-mark-clipart-transparent-3.png?width=337&height=559";
         public string Description {get;set;} = " ";
         public ItemType ItemType {get;set;} = ItemType.Charm;
-        public int Value {get;set;} = 0;
+        public int HitValue {get;set;} = 0;
+        public double Worth {get;set;} =0;
         public List<Effect> Effects {get;set;} = new List<Effect>(){};
     }
     public enum Status { Damage, Debuff, Heal, Misc, DmgOverTime, Restraint, ChanceOfSkip }

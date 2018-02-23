@@ -147,7 +147,7 @@ namespace OracleBot.Modules
             else{
                 var S = Stats.None;
                 if (Amount == 0){
-                    await ReplyAndDeleteAsync("You can't raise or decrease a stat by 0 you silly!", timeout: TimeSpan.FromSeconds(10));
+                    await ReplyAndDeleteAsync("You can't raise or decrease a stat by 0 you silly!", timeout: TimeSpan.FromSeconds(5));
                     return;
                 }
                 if (C.Level.StatPoints < Amount) {
@@ -197,6 +197,18 @@ namespace OracleBot.Modules
                     col.Update(C);
                     await ReplyAsync("Increased "+C.Name+"'s "+S.ToString()+" by "+Amount+".");
                 }
+            }
+        }
+        public async Task SetImage([Remainder]string url){
+            var character = PlayerLocking.GetLock(Database,Context.User.Id);
+            if (character == null){
+                await ReplyAndDeleteAsync("You're not locked to any character!");
+                return;
+            }
+            else {
+                character.Image = url;
+                character.Update(Database);
+                await ReplyAsync("Character image changed successfully!");
             }
         }
         [Command("AddSkill"), Alias("Add-Skill","NewSkill","New-Skill","Learn-Skill", "LearnSkill")]
@@ -270,7 +282,9 @@ namespace OracleBot.Modules
                         await msg.ModifyAsync(x => x.Embed = null);
                         await msg.ModifyAsync(x => x.Content = "Please follow the Effect creation menu now.");
                         var effect = await NewEffect(this.Interactive,Context);
-                        if (effect != null) skill.Effects.Add(effect);
+                        if (effect != null) {
+                            skill.Effects.Add(effect);
+                            }
                     }
                 }
                 character.Skill.Add(skill);
@@ -300,30 +314,37 @@ namespace OracleBot.Modules
                     case "a":
                         effect.type = Status.Damage;
                         FirstLoop = false;
+                        await reply.DeleteAsync();
                         break;
                     case "b":
                         effect.type = Status.Debuff;
                         FirstLoop = false;
+                        await reply.DeleteAsync();
                         break;
                     case "c":
                         effect.type = Status.DmgOverTime;
                         FirstLoop = false;
+                        await reply.DeleteAsync();
                         break;
                     case "d":
                         effect.type = Status.Heal;
                         FirstLoop = false;
+                        await reply.DeleteAsync();
                         break;
                     case "e":
                         effect.type = Status.Restraint;
                         FirstLoop = false;
+                        await reply.DeleteAsync();
                         break;
                     case "f":
                         effect.type = Status.ChanceOfSkip;
                         FirstLoop = false;
+                        await reply.DeleteAsync();
                         break;
                     case "g":
                         effect.type = Status.Misc;
                         FirstLoop = false;
+                        await reply.DeleteAsync();
                         break;
                     case "cancel":
                         return null;
@@ -340,6 +361,7 @@ namespace OracleBot.Modules
                         if (reply.Content.ToLower()=="cancel") return null;
                         var valid = System.Text.RegularExpressions.Regex.IsMatch(reply.Content.ToLower(), @"^[d-dx-xk-k0-9\+\-\s\*]*$");
                         if (!valid){
+                            await reply.DeleteAsync();
                             await interactive.ReplyAndDeleteAsync(context,"This is not a valid dice expression!", timeout: TimeSpan.FromSeconds(5));
                         }
                         else if (valid){
@@ -350,6 +372,8 @@ namespace OracleBot.Modules
                             if (reply.Content.ToLower()=="cancel") return null;
                             effect.Description = reply.Content;
                             effect.Turns = 0;
+                            await reply.DeleteAsync();
+                            SecondLoop = false;
                         }
                     }
                     if (effect.type == Status.DmgOverTime){
@@ -359,6 +383,7 @@ namespace OracleBot.Modules
                         if (reply.Content.ToLower()=="cancel") return null;
                         var valid = System.Text.RegularExpressions.Regex.IsMatch(reply.Content.ToLower(), @"^[d-dx-xk-k0-9\+\-\s\*]*$");
                         if (!valid){
+                            await reply.DeleteAsync();
                             await interactive.ReplyAndDeleteAsync(context,"This is not a valid dice expression!", timeout: TimeSpan.FromSeconds(5));
                         }
                         else if (valid){
@@ -368,15 +393,20 @@ namespace OracleBot.Modules
                             reply = await interactive.NextMessageAsync(context);
                             if (reply.Content.ToLower()=="cancel") return null;
                             effect.Description = reply.Content;
+                            await reply.DeleteAsync();
                             for (bool B = true; B == false;){
-                                await msg.ModifyAsync(y => y.Content = "How many turns does this effect last?");
+                                await msg.ModifyAsync(y => y.Content = "How many turns does this effect last?\n"+
+                            "Use 0 to indicate that this effect's duration is based on its corresponding skill level (not applicable for items or weapons)");
                                 reply = await interactive.NextMessageAsync(context);
                                 if (!int.TryParse(reply.Content, out int i)){
+                                    await reply.DeleteAsync();
                                     await interactive.ReplyAndDeleteAsync(Context,"This is not a number!",timeout: TimeSpan.FromSeconds(5));
                                 }
                                 else{
                                     effect.Turns = int.Parse(reply.Content);
+                                    await reply.DeleteAsync();
                                     B = false;
+                                    SecondLoop = false;
                                 }
                             }
                         }
@@ -388,35 +418,45 @@ namespace OracleBot.Modules
                         if (reply.Content.ToLower()=="cancel") return null;
                         var valid = System.Text.RegularExpressions.Regex.IsMatch(reply.Content.ToLower(), @"^[d-dx-xk-k0-9\+\-\s\*]*$");
                         if (!valid){
+                            await reply.DeleteAsync();
                             await interactive.ReplyAndDeleteAsync(context,"This is not a valid dice expression!", timeout: TimeSpan.FromSeconds(5));
                         }
                         else if (valid){
                             effect.Dice = reply.Content;
+                            await reply.DeleteAsync();
                         }
                     }
                     if (effect.type == Status.Restraint){
                         for (bool B = true; B == false;){
-                            await msg.ModifyAsync(y => y.Content = "How many turns does this effect last?");
+                            await msg.ModifyAsync(y => y.Content = "How many turns does this effect last?\n"+
+                            "Use 0 to indicate that this effect's duration is based on its corresponding skill level (not applicable for items or weapons)");
                             reply = await interactive.NextMessageAsync(context);
                             if (!int.TryParse(reply.Content, out int i)){
+                                await reply.DeleteAsync();
                                 await interactive.ReplyAndDeleteAsync(Context,"This is not a number!",timeout: TimeSpan.FromSeconds(5));
                             }
                             else{
+                                await reply.DeleteAsync();
                                 effect.Turns = int.Parse(reply.Content);
                                 B = false;
+                                SecondLoop = false;
                             }
                         }
                     }
                     if (effect.type == Status.ChanceOfSkip){
                         for (bool B = true; B == false;){
-                            await msg.ModifyAsync(y => y.Content = "How many turns does this effect last?");
+                            await msg.ModifyAsync(y => y.Content = "How many turns does this effect last?\n"+
+                            "Use 0 to indicate that this effect's duration is based on its corresponding skill level (not applicable for items or weapons)");
                             reply = await interactive.NextMessageAsync(context);
                             if (!int.TryParse(reply.Content, out int i)){
+                                await reply.DeleteAsync();
                                 await interactive.ReplyAndDeleteAsync(Context,"This is not a number!",timeout: TimeSpan.FromSeconds(5));
                             }
                             else{
+                                await reply.DeleteAsync();
                                 effect.Turns = int.Parse(reply.Content);
                                 B = false;
+                                SecondLoop = false;
                             }
                         }
                     }
@@ -429,11 +469,14 @@ namespace OracleBot.Modules
                             await msg.ModifyAsync(y => y.Content = "How many turns does this effect last?");
                             reply = await interactive.NextMessageAsync(context);
                             if (!int.TryParse(reply.Content, out int i)){
+                                await reply.DeleteAsync();
                                 await interactive.ReplyAndDeleteAsync(Context,"This is not a number!",timeout: TimeSpan.FromSeconds(5));
                             }
                             else{
+                                await reply.DeleteAsync();
                                 effect.Turns = int.Parse(reply.Content);
                                 B = false;
+                                SecondLoop = false;
                             }
                         }
                     }
@@ -446,27 +489,72 @@ namespace OracleBot.Modules
                             switch (reply.Content.ToLower()){
                                 case "might":
                                     effect.AffectedStat = Stats.Might;
+                                    await reply.DeleteAsync();
                                     b = false;
                                     break;
                                 case "agility":
                                     effect.AffectedStat = Stats.Agility;
+                                    await reply.DeleteAsync();
                                     b = false;
                                     break;
                                 case "constitution":
                                     effect.AffectedStat = Stats.Constitution;
+                                    await reply.DeleteAsync();
                                     b = false;
                                     break;
                                 case "perception":
                                     effect.AffectedStat = Stats.Perception;
+                                    await reply.DeleteAsync();
                                     b = false;
                                     break;
                                 case "magic":
                                     effect.AffectedStat = Stats.Magic;
+                                    await reply.DeleteAsync();
                                     b = false;
+                                    break;
+                                case "luck":
+                                    effect.AffectedStat = Stats.Luck;
+                                    await reply.DeleteAsync();
+                                    b = false;
+                                    break;
+                                case "fortitude":
+                                    effect.AffectedStat = Stats.Fortitude;
+                                    await reply.DeleteAsync();
+                                    b = false;
+                                    break;
+                                case "protection":
+                                    effect.AffectedStat = Stats.Protection;
+                                    await reply.DeleteAsync();
+                                    b = false;
+                                    break;
+                                default:
+                                    await reply.DeleteAsync();
+                                    await interactive.ReplyAndDeleteAsync(context,"This is not a valid option!",timeout: TimeSpan.FromSeconds(5));
                                     break;
                             }
                         }
+                        await msg.ModifyAsync(y => y.Content = "How much does this effect affect this stat?\n"+
+                        "(Use Negative numbers for debuffs and Positive numbers for buffs.)");
+                        reply = await interactive.NextMessageAsync(context);
+                        if (reply.Content.ToLower()=="cancel") return null;
+                        if (!int.TryParse(reply.Content.ToLower(),out int i) || int.Parse(reply.Content) == 0){
+                            await reply.DeleteAsync();
+                            await interactive.ReplyAndDeleteAsync(context,"This isn't a valid number or is a Zero!",timeout: TimeSpan.FromSeconds(5));
+                        }
+                        else {
+                            effect.Dice = reply.Content;
+                            await reply.DeleteAsync();
+                            SecondLoop = false;
+                        }
                     }
+                }
+                for (bool confirm = true; confirm == false;){
+                    await msg.ModifyAsync(x => x.Embed = Statics.EmbedEffect(effect));
+                    await msg.ModifyAsync(x => x.Content = "Is this ok? (y/n)");
+                    reply = await interactive.NextMessageAsync(context,timeout: TimeSpan.FromSeconds(5));
+                    if (reply.Content.ToLower() == "cancel") return null;
+                    if (reply.Content.ToLower() == "n" || reply.Content.ToLower() == "no") FirstLoop = true;
+                    if (reply.Content.ToLower() == "y" || reply.Content.ToLower() == "yes") confirm = false;
                 }
             }
             return effect;
