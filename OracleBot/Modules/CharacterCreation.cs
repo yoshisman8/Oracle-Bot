@@ -245,7 +245,7 @@ namespace OracleBot.Modules
                         "First things first: Does this spell has a **Single** target, **Multiple** or **All** targets, or does it affect **Self**?\n"+
                         "(Please reply below, you can say \"Cancel\" at any time to cancel the skill creation.");
                     await msg.ModifyAsync(x => x.Embed = Statics.BuildSkill(skill));
-                    var reply = await NextMessageAsync();
+                    var reply = await NextMessageAsync(timeout: TimeSpan.FromMinutes(3));
                     if (reply.Content.ToLower() == "cancel") return;
                     if(reply.Content.ToLower() == "single"){
                             skill.Target = Target.Single;
@@ -264,7 +264,7 @@ namespace OracleBot.Modules
                     }
                     if (A == false){
                         await msg.ModifyAsync(x => x.Content= "Do you want to add a description to your skill? Write it down now or respond \"Skip\" to not add one.");
-                        reply = await NextMessageAsync();
+                        reply = await NextMessageAsync(timeout: TimeSpan.FromMinutes(3));
                         if (reply.Content.ToLower() == "cancel") return;
                         if (reply.Content.ToLower() == "skip") {}
                         else { skill.Description = reply.Content;} 
@@ -335,7 +335,7 @@ namespace OracleBot.Modules
                 var msg = await context.Channel.SendMessageAsync("This is the effect creator, here you can add some power to your skills/gears/traits/etc.\n"+
                     "Let's start simple, What's the name of this effect? (Note, names only matter if the effect is not immediate (such as buffs and debuffs).\n"+
                     "(Remember you can say \"Cancel\" to cancel this creation process.");
-                var reply = await interactive.NextMessageAsync(context);
+                var reply = await interactive.NextMessageAsync(context, timeout: TimeSpan.FromMinutes(3));
                 if (reply.Content.ToLower() == "cancel") return null;
                 else {
                     effect.Name = reply.Content;
@@ -343,12 +343,13 @@ namespace OracleBot.Modules
                     await reply.DeleteAsync();
                     }
             }
+            
             bool FirstLoop = true;
             while (FirstLoop){
                 var msg = await context.Channel.SendMessageAsync("Let's start making this effect. First things first. "+
                 "What is this effect's **type**? \nUse the guide below to see what each type means and reply with its corresponding letter."
                 ,embed: Statics.EffectInfo());
-                var reply = await interactive.NextMessageAsync(context);
+                var reply = await interactive.NextMessageAsync(context, timeout: TimeSpan.FromMinutes(3));
                 switch (reply.Content.ToLower()){
                     case "a":
                         effect.type = Status.Damage;
@@ -597,7 +598,7 @@ namespace OracleBot.Modules
                 while (confirm){
                     await msg.ModifyAsync(x => x.Embed = Statics.EmbedEffect(effect));
                     await msg.ModifyAsync(x => x.Content = "Is this ok? (y/n)");
-                    reply = await interactive.NextMessageAsync(context,timeout: TimeSpan.FromSeconds(5));
+                    reply = await interactive.NextMessageAsync(context,timeout: TimeSpan.FromMinutes(5));
                     if (reply.Content.ToLower() == "cancel") return null;
                     if (reply.Content.ToLower() == "n" || reply.Content.ToLower() == "no") FirstLoop = true;
                     if (reply.Content.ToLower() == "y" || reply.Content.ToLower() == "yes") confirm = false;
