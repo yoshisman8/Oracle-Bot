@@ -18,7 +18,7 @@ namespace OracleBot.Modules
     {
         public LiteDatabase Database {get;set;}
         [Command("Character"), Alias("C", "Char")]
-        [Summary("Usage: `.Char <Name>`")]
+        [Summary("Finds a character. Usage: `.Char <Name>`")]
         public async Task find([Remainder] string Name){
             var col = Database.GetCollection<Character>("Characters");
             var Items = Database.GetCollection<Item>("Items");
@@ -56,7 +56,7 @@ namespace OracleBot.Modules
             }
         }
         [Command("AddChar"), Alias("Add-char", "create-char","Newchar")]
-        [Summary("Usage: .Addchar <Name> [Race] [Class]`")]
+        [Summary("Adds a new character to the Database and locks you as said character. \nUsage: .Addchar <Name> [Race] [Class]`")]
         public async Task Create(string Name, string Race = "Racially undefined", string Class = "Wanderer"){
             var col = Database.GetCollection<Character>("Characters");
 
@@ -76,6 +76,7 @@ namespace OracleBot.Modules
             "You've been given 18 stat points and 1 skill point. Use `.StatUp Stat_To_Increase Ammount` and `.AddSkill Skill_Name` to use said points.");
         }
         [Command("DeleteCharacter"), Alias("Delchar","Del-char","RemChar","RemoveCharacter")]
+        [Summary("Deletes a character form the Database. Usage: `.DeleteChar <Name>`")]
         public async Task Test(string Name){
             var col = Database.GetCollection<Character>("Characters");
             var query = col.Include(x => x.Equipment)
@@ -107,6 +108,7 @@ namespace OracleBot.Modules
             }
         }
         [Command("Lock")]
+        [Summary("Locks you as a character. Usage: `.Lock <Name>`\nNote: you can only lock yourself to characters you've made (Unless you're a DM).")]
         public async Task Lock(string Name){
             var col = Database.GetCollection<Character>("Characters");
             var query = col.Include(x => x.Equipment)
@@ -138,6 +140,7 @@ namespace OracleBot.Modules
             }
         }
         [Command("StatUp")]
+        [Summary("Raises (or lowers) one of the stats of the character you're currently locked as. Usage: `.Statup <Stat> <Amount>` \nNote: If you want to lower a stat, use negative numbers.")]
         public async Task StatUp(string Stat, int Amount){
             var C = PlayerLocking.GetLock(Database,Context.User.Id);
             if (C == null){
@@ -200,6 +203,7 @@ namespace OracleBot.Modules
             }
         }
         [Command("SetImage")]
+        [Summary("Changes the image URL of your character. Usage: `.SetImage <ImageURL>`")]
         public async Task SetImage([Remainder]string url){
             var character = PlayerLocking.GetLock(Database,Context.User.Id);
             if (character == null){
@@ -213,6 +217,7 @@ namespace OracleBot.Modules
             }
         }
         [Command("AddSkill"), Alias("Add-Skill","NewSkill","New-Skill","Learn-Skill", "LearnSkill")]
+        [Summary("Adds a new skill to the character you're currently locked as. Usage: `.Addskill [Name]`.\n Note: the timeout for replies to the bot's question is 5 minutes, if you take longer than that, the bot will cancel the command and you'll have to start over.")]
         public async Task CreateSkill(string Skill_Name = ""){
             var character = PlayerLocking.GetLock(Database,Context.User.Id);
             if (character == null){
@@ -301,6 +306,7 @@ namespace OracleBot.Modules
         }
 
         [Command("RemSkill"), Alias("delskill", "forgetskill", "RemoveSkill","Delete-Skill","Forget-Skill", "Rem-Skill", "del-skill")]
+        [Summary("Removes a skill from the character you're locked as. Usage: `.RemSkill <Name>`")]
         public async Task RemSkill(string Name){
             var character = PlayerLocking.GetLock(Database,Context.User.Id);
             if (character == null){
@@ -398,7 +404,7 @@ namespace OracleBot.Modules
                     if (effect.type == Status.Damage){
                         await msg.ModifyAsync(x => x.Content = "What's the damage Dice (Or flat damage number) for this effect?\n"+
                             "You can add X where the skill's level would go (ie: Xd5 = as many d5's as the skill's level)");
-                        reply = await interactive.NextMessageAsync(context);
+                        reply = await interactive.NextMessageAsync(context,timeout: TimeSpan.FromMinutes(5));
                         if (reply.Content.ToLower()=="cancel") return null;
                         var valid = System.Text.RegularExpressions.Regex.IsMatch(reply.Content.ToLower(), @"^[d-dx-xk-k0-9\+\-\s\*]*$");
                         if (!valid){
@@ -409,7 +415,7 @@ namespace OracleBot.Modules
                             effect.Dice = reply.Content.ToLower();
                             await msg.ModifyAsync(x => x.Content = "What type of damage is this? (ie: Blunt, Piercing, Slashing, Etc.)\n"+
                             "Note: System messages will read as `Character did X <Damage type> to <target>`.");
-                            reply = await interactive.NextMessageAsync(context);
+                            reply = await interactive.NextMessageAsync(context,timeout: TimeSpan.FromMinutes(5));
                             if (reply.Content.ToLower()=="cancel") return null;
                             effect.Description = reply.Content;
                             effect.Turns = 0;
@@ -420,7 +426,7 @@ namespace OracleBot.Modules
                     if (effect.type == Status.DmgOverTime){
                         await msg.ModifyAsync(x => x.Content = "What's the damage Dice (Or flat damage number) for this effect?\n"+
                             "You can add X where the skill's level would go (ie: Xd5 = as many d5's as the skill's level)");
-                        reply = await interactive.NextMessageAsync(context);
+                        reply = await interactive.NextMessageAsync(context,timeout: TimeSpan.FromMinutes(5));
                         if (reply.Content.ToLower()=="cancel") return null;
                         var valid = System.Text.RegularExpressions.Regex.IsMatch(reply.Content.ToLower(), @"^[d-dx-xk-k0-9\+\-\s\*]*$");
                         if (!valid){
@@ -431,7 +437,7 @@ namespace OracleBot.Modules
                             effect.Dice = reply.Content.ToLower();
                             await msg.ModifyAsync(x => x.Content = "What type of damage is this? (ie: Blunt, Piercing, Slashing, Etc.)\n"+
                             "Note: System messages will read as `Character did X <Damage type> to <target>`.");
-                            reply = await interactive.NextMessageAsync(context);
+                            reply = await interactive.NextMessageAsync(context,timeout: TimeSpan.FromMinutes(5));
                             if (reply.Content.ToLower()=="cancel") return null;
                             effect.Description = reply.Content;
                             await reply.DeleteAsync();
@@ -439,7 +445,7 @@ namespace OracleBot.Modules
                             while (B){
                                 await msg.ModifyAsync(y => y.Content = "How many turns does this effect last?\n"+
                             "Use 0 to indicate that this effect's duration is based on its corresponding skill level (not applicable for items or weapons)");
-                                reply = await interactive.NextMessageAsync(context);
+                                reply = await interactive.NextMessageAsync(context,timeout: TimeSpan.FromMinutes(5));
                                 if (!int.TryParse(reply.Content, out int i)){
                                     await reply.DeleteAsync();
                                     await interactive.ReplyAndDeleteAsync(Context,"This is not a number!",timeout: TimeSpan.FromSeconds(5));
@@ -456,7 +462,7 @@ namespace OracleBot.Modules
                     if (effect.type == Status.Heal){
                         await msg.ModifyAsync(x => x.Content = "What's the Healing Dice (Or flat number) for this effect?\n"+
                             "You can add X where the skill's level would go (ie: Xd5 = as many d5's as the skill's level)");
-                        reply = await interactive.NextMessageAsync(context);
+                        reply = await interactive.NextMessageAsync(context,timeout: TimeSpan.FromMinutes(5));
                         if (reply.Content.ToLower()=="cancel") return null;
                         var valid = System.Text.RegularExpressions.Regex.IsMatch(reply.Content.ToLower(), @"^[d-dx-xk-k0-9\+\-\s\*]*$");
                         if (!valid){
@@ -473,7 +479,7 @@ namespace OracleBot.Modules
                             while (B){
                             await msg.ModifyAsync(y => y.Content = "How many turns does this effect last?\n"+
                             "Use 0 to indicate that this effect's duration is based on its corresponding skill level (not applicable for items or weapons)");
-                            reply = await interactive.NextMessageAsync(context);
+                            reply = await interactive.NextMessageAsync(context,timeout: TimeSpan.FromMinutes(5));
                             if (!int.TryParse(reply.Content, out int i)){
                                 await reply.DeleteAsync();
                                 await interactive.ReplyAndDeleteAsync(Context,"This is not a number!",timeout: TimeSpan.FromSeconds(5));
@@ -491,7 +497,7 @@ namespace OracleBot.Modules
                             while (B){
                             await msg.ModifyAsync(y => y.Content = "How many turns does this effect last?\n"+
                             "Use 0 to indicate that this effect's duration is based on its corresponding skill level (not applicable for items or weapons)");
-                            reply = await interactive.NextMessageAsync(context);
+                            reply = await interactive.NextMessageAsync(context,timeout: TimeSpan.FromMinutes(5));
                             if (!int.TryParse(reply.Content, out int i)){
                                 await reply.DeleteAsync();
                                 await interactive.ReplyAndDeleteAsync(Context,"This is not a number!",timeout: TimeSpan.FromSeconds(5));
@@ -506,13 +512,13 @@ namespace OracleBot.Modules
                     }
                     if (effect.type == Status.Misc){
                         await msg.ModifyAsync(y => y.Content = "What does this effect do (This is a RP only effect and will have no bearing on stats).");
-                        reply = await interactive.NextMessageAsync(context);
+                        reply = await interactive.NextMessageAsync(context,timeout: TimeSpan.FromMinutes(5));
                         if (reply.Content.ToLower()=="cancel") return null;
                         effect.Description = reply.Content;
                         bool B = true;
                         while (B){
                             await msg.ModifyAsync(y => y.Content = "How many turns does this effect last?");
-                            reply = await interactive.NextMessageAsync(context);
+                            reply = await interactive.NextMessageAsync(context,timeout: TimeSpan.FromMinutes(5));
                             if (!int.TryParse(reply.Content, out int i)){
                                 await reply.DeleteAsync();
                                 await interactive.ReplyAndDeleteAsync(Context,"This is not a number!",timeout: TimeSpan.FromSeconds(5));
@@ -530,7 +536,7 @@ namespace OracleBot.Modules
                             while (b){
                             await msg.ModifyAsync(y => y.Content = "What stat does this effect alter?\n"+
                             "You can choose between the following stats: Might, Agility, Constitution, Perception, Magic, Luck, Fortitude or Protection.");
-                            reply = await interactive.NextMessageAsync(context);
+                            reply = await interactive.NextMessageAsync(context,timeout: TimeSpan.FromMinutes(5));
                             if (reply.Content.ToLower()=="cancel") return null;
                             switch (reply.Content.ToLower()){
                                 case "might":
@@ -581,7 +587,7 @@ namespace OracleBot.Modules
                         }
                         await msg.ModifyAsync(y => y.Content = "How much does this effect affect this stat?\n"+
                         "(Use Negative numbers for debuffs and Positive numbers for buffs.)");
-                        reply = await interactive.NextMessageAsync(context);
+                        reply = await interactive.NextMessageAsync(context,timeout: TimeSpan.FromMinutes(5));
                         if (reply.Content.ToLower()=="cancel") return null;
                         if (!int.TryParse(reply.Content.ToLower(),out int i) || int.Parse(reply.Content) == 0){
                             await reply.DeleteAsync();
@@ -600,8 +606,14 @@ namespace OracleBot.Modules
                     await msg.ModifyAsync(x => x.Content = "Is this ok? (y/n)");
                     reply = await interactive.NextMessageAsync(context,timeout: TimeSpan.FromMinutes(5));
                     if (reply.Content.ToLower() == "cancel") return null;
-                    if (reply.Content.ToLower() == "n" || reply.Content.ToLower() == "no") FirstLoop = true;
-                    if (reply.Content.ToLower() == "y" || reply.Content.ToLower() == "yes") confirm = false;
+                    if (reply.Content.ToLower() == "n" || reply.Content.ToLower() == "no") {
+                        FirstLoop = true;
+                        }
+                    if (reply.Content.ToLower() == "y" || reply.Content.ToLower() == "yes") {
+                        confirm = false;
+                        await reply.DeleteAsync();
+                        await msg.DeleteAsync();
+                        }
                 }
             }
             return effect;

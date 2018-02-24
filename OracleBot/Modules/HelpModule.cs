@@ -66,7 +66,8 @@ namespace OracleBot.Modules
             var builder = new EmbedBuilder()
             {
                 Color = new Color(114, 137, 218),
-                Description = $"Here are some commands like **{command}**"
+                Description = $"Here are some commands like **{command}**\n"+
+                "Note: fields surounded by <> are mandatory while fields surounded by [] are optional. Do **not** do `.Command <text>` when sending the commands, you are not supposed to wrap words around <> or []."
             };
 
             foreach (var match in result.Commands)
