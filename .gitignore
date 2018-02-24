@@ -34,3 +34,5 @@ OracleBot/_configuration.json
 OracleBot/.swo
 OracleBot/.swp
 OracleBot/Database.db
+OracleBot/.vscode/launch.json
+OracleBot/.vscode/tasks.json
