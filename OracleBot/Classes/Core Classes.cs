@@ -294,11 +294,13 @@ namespace OracleBot.Classes{
         public Cooldown Cooldown {get;set;} = new Cooldown();
         public List<Effect> Effects {get;set;}= new List<Effect>(){};
         public Target Target {get;set;} = Target.Single;
+        public Stats StatHinge {get; set;} = Stats.None;
     }
     public class Trait{
         public string Name {get;set;} = " ";
         public string Description {get;set;} = " ";
         public List<Effect> Effects {get;set;}= new List<Effect>(){};
+        public Stats StatHinge {get; set;} = Stats.None;
     }
     public class Effect {
         public string Name {get;set;} = " ";

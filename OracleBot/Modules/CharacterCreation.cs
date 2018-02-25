@@ -129,7 +129,7 @@ namespace OracleBot.Modules
                 return;
             }
             else {
-                var character = query.FirstOrDefault();
+                var character = query.FirstOrDefault();                     
                 if (character.Owner == Context.User.Id || User.GuildPermissions.ManageMessages){
                     PlayerLocking.LockPayer(character,Context.User.Id,Database);
                     await ReplyAsync("You've been locked to character **"+character.Name+"**.");
@@ -216,6 +216,32 @@ namespace OracleBot.Modules
                 await ReplyAsync("Character image changed successfully!");
             }
         }
+        [Command("SetRace"), Alias("ChangeRace")]
+        public async Task SetRace(string Race){
+            var character = PlayerLocking.GetLock(Database,Context.User.Id);
+            if (character == null){
+                await ReplyAndDeleteAsync("You're not locked to any character!");
+                return;
+            }
+            else {
+                character.Race = Race;
+                character.Update(Database);
+                await ReplyAsync(character.Name+" is now a "+Race);
+            }
+        }
+        [Command("SetClass"), Alias("ChangeClass")]
+        public async Task setClass(string Class){
+            var character = PlayerLocking.GetLock(Database,Context.User.Id);
+            if (character == null){
+                await ReplyAndDeleteAsync("You're not locked to any character!");
+                return;
+            }
+            else {
+                character.Class = Class;
+                character.Update(Database);
+                await ReplyAsync(character.Name+" is now a "+Class);
+            }
+        }
         [Command("AddSkill"), Alias("Add-Skill","NewSkill","New-Skill","Learn-Skill", "LearnSkill")]
         [Summary("Adds a new skill to the character you're currently locked as. Usage: `.Addskill [Name]`.\n Note: the timeout for replies to the bot's question is 5 minutes, if you take longer than that, the bot will cancel the command and you'll have to start over.")]
         public async Task CreateSkill(string Skill_Name = ""){
@@ -240,7 +266,7 @@ namespace OracleBot.Modules
                         while (A1){
                             await msg.ModifyAsync(x => x.Content = "It seems you left the Skill name empty. What's the name for this skill? (You can say \"Cancel\" to stop creating the this skill at any time.");
                             var Areply = await NextMessageAsync();
-                            if (Areply.Content.ToLower() == "cancel") return;
+                            if (Areply.Content.ToLower()=="cancel" || Areply == null) return;
                             skill.Name = Areply.Content;
                             await Areply.DeleteAsync();
                             A1 = false;
@@ -251,7 +277,7 @@ namespace OracleBot.Modules
                         "(Please reply below, you can say \"Cancel\" at any time to cancel the skill creation.");
                     await msg.ModifyAsync(x => x.Embed = Statics.BuildSkill(skill));
                     var reply = await NextMessageAsync(timeout: TimeSpan.FromMinutes(3));
-                    if (reply.Content.ToLower() == "cancel") return;
+                    if (reply.Content.ToLower()=="cancel" || reply == null) return;
                     if(reply.Content.ToLower() == "single"){
                             skill.Target = Target.Single;
                             A = false;
@@ -267,13 +293,65 @@ namespace OracleBot.Modules
                             A = false;
                             await reply.DeleteAsync();
                     }
-                    if (A == false){
+                    {
                         await msg.ModifyAsync(x => x.Content= "Do you want to add a description to your skill? Write it down now or respond \"Skip\" to not add one.");
                         reply = await NextMessageAsync(timeout: TimeSpan.FromMinutes(3));
-                        if (reply.Content.ToLower() == "cancel") return;
+                        if (reply.Content.ToLower()=="cancel" || reply == null) return;
                         if (reply.Content.ToLower() == "skip") {}
-                        else { skill.Description = reply.Content;} 
+                        else { skill.Description = reply.Content;}
                         await reply.DeleteAsync();
+                    }
+                }
+                bool A2 = true;
+                while (A2){
+                    await msg.ModifyAsync(x => x.Content = "What stat does this skill hinge on? (this stat will gain a bonuses from said stat).\n"+
+                    "Reply with 'none' if the stat doesn't hinge on any stat for bonuses (This means you cannot use 'X' on the dice as it would otherwise be 0)");
+                    var reply = await NextMessageAsync(timeout: TimeSpan.FromMinutes(5));
+                    switch (reply.Content.ToLower()){
+                        case "might":
+                            skill.StatHinge = Stats.Might;
+                            await reply.DeleteAsync();
+                            A2 = false;
+                            break;
+                        case "agility":
+                            skill.StatHinge = Stats.Agility;
+                            await reply.DeleteAsync();
+                            A2 = false;
+                            break;
+                        case "constitution":
+                            skill.StatHinge = Stats.Constitution;
+                            await reply.DeleteAsync();
+                            A2 = false;
+                            break;
+                        case "perception":
+                            skill.StatHinge = Stats.Perception;
+                            await reply.DeleteAsync();
+                            A2 = false;
+                            break;
+                        case "magic":
+                            skill.StatHinge = Stats.Magic;
+                            await reply.DeleteAsync();
+                            A2 = false;
+                            break;
+                        case "luck":
+                            skill.StatHinge = Stats.Luck;
+                            await reply.DeleteAsync();
+                            A2 = false;
+                            break;
+                        case "fortitude":
+                            skill.StatHinge = Stats.Fortitude;
+                            await reply.DeleteAsync();
+                            A2 = false;
+                            break;
+                        case "protection":
+                            skill.StatHinge = Stats.Protection;
+                            await reply.DeleteAsync();
+                            A2 = false;
+                            break;
+                        default:
+                            await reply.DeleteAsync();
+                            await ReplyAndDeleteAsync("This is not a valid option!",timeout: TimeSpan.FromSeconds(5));
+                            break;
                     }
                 }
                 bool B = true;
@@ -283,8 +361,9 @@ namespace OracleBot.Modules
                         "Unless your skill doesn't do anything you should always have at least 1 effect.");
                     await msg.ModifyAsync(x => x.Embed = Statics.BuildSkill(skill));
                     var reply = await NextMessageAsync();
-                    if (reply.Content.ToLower() == "cancel") return;
-                    if (reply.Content.ToLower() == "done") { 
+                    if (reply == null) return;
+                    if (reply.Content.ToLower()=="cancel" || reply == null) return;
+                    if (reply.Content.ToLower() == "done") {
                         B = false;
                         character.Update(Database);
                         }
@@ -335,6 +414,159 @@ namespace OracleBot.Modules
                 }
             }
         }
+        [Command("AddTrait"), Alias("Add-Trait","NewTrait","New-Trait")]
+        [Summary("Adds a new trait to the character you're currently locked as. Usage: `.Addtrait [Name]`.\n Note: the timeout for replies to the bot's question is 5 minutes, if you take longer than that, the bot will cancel the command and you'll have to start over.")]
+        public async Task CreateTrait(string Trait_Name = ""){
+            var character = PlayerLocking.GetLock(Database,Context.User.Id);
+            if (character == null){
+                await ReplyAndDeleteAsync("You're not locked to any character!");
+                return;
+            }
+            else {
+                if (character.Level.SkillPoints < 1){
+                    await ReplyAndDeleteAsync("You don't have any skill points to spend!");
+                    return;
+                }
+                var Trait = new Trait(){
+                    Name = Trait_Name
+                };
+                var msg = await ReplyAsync("Starting trait creation menu...");
+                bool A = true;
+                while (A){
+                    if (Trait_Name == ""){
+                        bool A1 = true;
+                        while (A1){
+                            await msg.ModifyAsync(x => x.Content = "It seems you left the Trait name empty. What's the name for this Trait? (You can say \"Cancel\" to stop creating the this skill at any time.");
+                            var Areply = await NextMessageAsync();
+                            if (Areply == null) return;
+                            if (Areply.Content.ToLower()=="cancel" || Areply == null) return;
+                            Trait.Name = Areply.Content;
+                            Trait_Name = Areply.Content;
+                            await Areply.DeleteAsync();
+                            A1 = false;
+                        }
+                    }
+                    {
+                    await msg.ModifyAsync(x => x.Content= "Do you want to add a description to your Trait? Write it down now or respond \"Skip\" to not add one.");
+                    var reply = await NextMessageAsync(timeout: TimeSpan.FromMinutes(5));
+                    if (reply.Content.ToLower()=="cancel" || reply == null) return;
+                    if (reply.Content.ToLower() == "skip") {}
+                    else { Trait.Description = reply.Content;
+                        await reply.DeleteAsync();
+                        A = false;
+                    }
+                }
+                }
+                
+                bool A2 = true;
+                while (A2){
+                    await msg.ModifyAsync(x => x.Content = "What stat does this trait hinge on? (this stat will gain a bonuses from said stat).\n"+
+                    "Reply with 'none' if the stat doesn't hinge on any stat for bonuses (This means you cannot use 'X' on the dice as it would otherwise be 0)");
+                    var reply = await NextMessageAsync(timeout: TimeSpan.FromMinutes(5));
+                    switch (reply.Content.ToLower()){
+                        case "might":
+                            Trait.StatHinge = Stats.Might;
+                            await reply.DeleteAsync();
+                            A2 = false;
+                            break;
+                        case "agility":
+                            Trait.StatHinge = Stats.Agility;
+                            await reply.DeleteAsync();
+                            A2 = false;
+                            break;
+                        case "constitution":
+                            Trait.StatHinge = Stats.Constitution;
+                            await reply.DeleteAsync();
+                            A2 = false;
+                            break;
+                        case "perception":
+                            Trait.StatHinge = Stats.Perception;
+                            await reply.DeleteAsync();
+                            A2 = false;
+                            break;
+                        case "magic":
+                            Trait.StatHinge = Stats.Magic;
+                            await reply.DeleteAsync();
+                            A2 = false;
+                            break;
+                        case "luck":
+                            Trait.StatHinge = Stats.Luck;
+                            await reply.DeleteAsync();
+                            A2 = false;
+                            break;
+                        case "fortitude":
+                            Trait.StatHinge = Stats.Fortitude;
+                            await reply.DeleteAsync();
+                            A2 = false;
+                            break;
+                        case "protection":
+                            Trait.StatHinge = Stats.Protection;
+                            await reply.DeleteAsync();
+                            A2 = false;
+                            break;
+                        default:
+                            await reply.DeleteAsync();
+                            await ReplyAndDeleteAsync("This is not a valid option!",timeout: TimeSpan.FromSeconds(5));
+                            break;
+                    }
+                }
+                bool B = true;
+                while (B){
+                    await msg.ModifyAsync(x => x.Content = "Do you want to add an Effect to this trait? Reply 'add' to add one or 'done' if you're done adding effects.\n\n"+
+                        "About effects: Effects are what make skills, items, triats, armor, ect affect your character.\n"+
+                        "Unless your skill doesn't do anything you should always have at least 1 effect.\n\n"+
+                        "**Unlike skills, traits can only have affect you, not others. If a trait is meant to be used as an attack, ask your DM to give you an additional skill point.**");
+                    var reply = await NextMessageAsync();
+                    if (reply.Content.ToLower()=="cancel" || reply == null) return;
+                    if (reply.Content.ToLower() == "done") {
+                        B = false;
+                        character.Update(Database);
+                        }
+                    else if (reply.Content.ToLower() == "add"){
+                        await msg.ModifyAsync(x => x.Embed = null);
+                        await msg.ModifyAsync(x => x.Content = "Please follow the Effect creation menu now.");
+                        await reply.DeleteAsync();
+                        var effect = await NewEffect(this.Interactive,Context);
+                        if (effect != null) {
+                            Trait.Effects.Add(effect);
+                            }
+                    }
+                }
+                character.Traits.Add(Trait);
+                character.Update(Database);
+                await ReplyAsync("Trait "+Trait.Name+" created successfully!"); return;
+            }
+        }
+        [Command("RemTrait"), Alias("deltrait", "RemoveTrait","Delete-Trait","Forget-Trait", "Rem-Trait", "del-Trait")]
+        [Summary("Removes a trait from the character you're locked as. Usage: `.RemSkill <Name>`")]
+        public async Task Remtrait(string Name){
+            var character = PlayerLocking.GetLock(Database,Context.User.Id);
+            if (character == null){
+                await ReplyAndDeleteAsync("You're not locked to any character!");
+                return;
+            }
+            else {
+                var traits = character.Traits.Where(x => x.Name.ToLower().StartsWith(Name.ToLower()));
+                if (traits.Count() == 0){
+                    await ReplyAndDeleteAsync(character.Name+" doesn't have a skill whose name starts with \""+Name+"\".");
+                    return;
+                }
+                else if (traits.Count() >= 2){
+                    var sb = new StringBuilder();
+                    sb.Append(character.Name+" has multiple skills that start with \""+Name+"\". Please specify from one of the following: ");
+                    foreach(var x in traits){
+                        sb.Append("`"+x.Name+"`, ");
+                    }
+                    await ReplyAsync(sb.ToString().Substring(0,sb.Length -2)+".");
+                    return;
+                }
+                else {
+                    character.Traits.Remove(traits.FirstOrDefault());
+                    character.Update(Database);
+                    await ReplyAsync(character.Name+" no longer has the skill \""+traits.FirstOrDefault().Name+"\".");
+                }
+            }
+        }
         public async Task<Effect> NewEffect(InteractiveService interactive, SocketCommandContext context, Effect effect = null){
             if (effect == null){
                 effect = new Effect();
@@ -342,14 +574,13 @@ namespace OracleBot.Modules
                     "Let's start simple, What's the name of this effect? (Note, names only matter if the effect is not immediate (such as buffs and debuffs).\n"+
                     "(Remember you can say \"Cancel\" to cancel this creation process.");
                 var reply = await interactive.NextMessageAsync(context, timeout: TimeSpan.FromMinutes(3));
-                if (reply.Content.ToLower() == "cancel") return null;
+                if (reply.Content.ToLower()=="cancel" || reply == null) return null;
                 else {
                     effect.Name = reply.Content;
                     await msg.DeleteAsync();
                     await reply.DeleteAsync();
                     }
             }
-            
             bool FirstLoop = true;
             while (FirstLoop){
                 var msg = await context.Channel.SendMessageAsync("Let's start making this effect. First things first. "+
@@ -405,7 +636,7 @@ namespace OracleBot.Modules
                         await msg.ModifyAsync(x => x.Content = "What's the damage Dice (Or flat damage number) for this effect?\n"+
                             "You can add X where the skill's level would go (ie: Xd5 = as many d5's as the skill's level)");
                         reply = await interactive.NextMessageAsync(context,timeout: TimeSpan.FromMinutes(5));
-                        if (reply.Content.ToLower()=="cancel") return null;
+                        if (reply.Content.ToLower()=="cancel" || reply == null) return null;
                         var valid = System.Text.RegularExpressions.Regex.IsMatch(reply.Content.ToLower(), @"^[d-dx-xk-k0-9\+\-\s\*]*$");
                         if (!valid){
                             await reply.DeleteAsync();
@@ -416,7 +647,7 @@ namespace OracleBot.Modules
                             await msg.ModifyAsync(x => x.Content = "What type of damage is this? (ie: Blunt, Piercing, Slashing, Etc.)\n"+
                             "Note: System messages will read as `Character did X <Damage type> to <target>`.");
                             reply = await interactive.NextMessageAsync(context,timeout: TimeSpan.FromMinutes(5));
-                            if (reply.Content.ToLower()=="cancel") return null;
+                            if (reply.Content.ToLower()=="cancel" || reply == null) return null;
                             effect.Description = reply.Content;
                             effect.Turns = 0;
                             await reply.DeleteAsync();
@@ -427,7 +658,7 @@ namespace OracleBot.Modules
                         await msg.ModifyAsync(x => x.Content = "What's the damage Dice (Or flat damage number) for this effect?\n"+
                             "You can add X where the skill's level would go (ie: Xd5 = as many d5's as the skill's level)");
                         reply = await interactive.NextMessageAsync(context,timeout: TimeSpan.FromMinutes(5));
-                        if (reply.Content.ToLower()=="cancel") return null;
+                        if (reply.Content.ToLower()=="cancel" || reply == null) return null;
                         var valid = System.Text.RegularExpressions.Regex.IsMatch(reply.Content.ToLower(), @"^[d-dx-xk-k0-9\+\-\s\*]*$");
                         if (!valid){
                             await reply.DeleteAsync();
@@ -438,7 +669,7 @@ namespace OracleBot.Modules
                             await msg.ModifyAsync(x => x.Content = "What type of damage is this? (ie: Blunt, Piercing, Slashing, Etc.)\n"+
                             "Note: System messages will read as `Character did X <Damage type> to <target>`.");
                             reply = await interactive.NextMessageAsync(context,timeout: TimeSpan.FromMinutes(5));
-                            if (reply.Content.ToLower()=="cancel") return null;
+                            if (reply.Content.ToLower()=="cancel" || reply == null) return null;
                             effect.Description = reply.Content;
                             await reply.DeleteAsync();
                             bool B = true;
@@ -463,7 +694,7 @@ namespace OracleBot.Modules
                         await msg.ModifyAsync(x => x.Content = "What's the Healing Dice (Or flat number) for this effect?\n"+
                             "You can add X where the skill's level would go (ie: Xd5 = as many d5's as the skill's level)");
                         reply = await interactive.NextMessageAsync(context,timeout: TimeSpan.FromMinutes(5));
-                        if (reply.Content.ToLower()=="cancel") return null;
+                        if (reply.Content.ToLower()=="cancel" || reply == null) return null;
                         var valid = System.Text.RegularExpressions.Regex.IsMatch(reply.Content.ToLower(), @"^[d-dx-xk-k0-9\+\-\s\*]*$");
                         if (!valid){
                             await reply.DeleteAsync();
@@ -513,7 +744,7 @@ namespace OracleBot.Modules
                     if (effect.type == Status.Misc){
                         await msg.ModifyAsync(y => y.Content = "What does this effect do (This is a RP only effect and will have no bearing on stats).");
                         reply = await interactive.NextMessageAsync(context,timeout: TimeSpan.FromMinutes(5));
-                        if (reply.Content.ToLower()=="cancel") return null;
+                        if (reply.Content.ToLower()=="cancel" || reply == null) return null;
                         effect.Description = reply.Content;
                         bool B = true;
                         while (B){
@@ -537,7 +768,7 @@ namespace OracleBot.Modules
                             await msg.ModifyAsync(y => y.Content = "What stat does this effect alter?\n"+
                             "You can choose between the following stats: Might, Agility, Constitution, Perception, Magic, Luck, Fortitude or Protection.");
                             reply = await interactive.NextMessageAsync(context,timeout: TimeSpan.FromMinutes(5));
-                            if (reply.Content.ToLower()=="cancel") return null;
+                            if (reply.Content.ToLower()=="cancel" || reply == null) return null;
                             switch (reply.Content.ToLower()){
                                 case "might":
                                     effect.AffectedStat = Stats.Might;
@@ -588,7 +819,7 @@ namespace OracleBot.Modules
                         await msg.ModifyAsync(y => y.Content = "How much does this effect affect this stat?\n"+
                         "(Use Negative numbers for debuffs and Positive numbers for buffs.)");
                         reply = await interactive.NextMessageAsync(context,timeout: TimeSpan.FromMinutes(5));
-                        if (reply.Content.ToLower()=="cancel") return null;
+                        if (reply.Content.ToLower()=="cancel" || reply == null) return null;
                         if (!int.TryParse(reply.Content.ToLower(),out int i) || int.Parse(reply.Content) == 0){
                             await reply.DeleteAsync();
                             await interactive.ReplyAndDeleteAsync(context,"This isn't a valid number or is a Zero!",timeout: TimeSpan.FromSeconds(5));
@@ -605,9 +836,10 @@ namespace OracleBot.Modules
                     await msg.ModifyAsync(x => x.Embed = Statics.EmbedEffect(effect));
                     await msg.ModifyAsync(x => x.Content = "Is this ok? (y/n)");
                     reply = await interactive.NextMessageAsync(context,timeout: TimeSpan.FromMinutes(5));
-                    if (reply.Content.ToLower() == "cancel") return null;
+                    if (reply.Content.ToLower()=="cancel" || reply == null) return null;
                     if (reply.Content.ToLower() == "n" || reply.Content.ToLower() == "no") {
                         FirstLoop = true;
+                        await reply.DeleteAsync();
                         }
                     if (reply.Content.ToLower() == "y" || reply.Content.ToLower() == "yes") {
                         confirm = false;
