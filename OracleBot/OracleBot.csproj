@@ -13,7 +13,7 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.0.0"/>
     <PackageReference Include="Microsoft.Extensions.Logging" Version="2.0.0"/>
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="2.0.0"/>
-    <PackageReference Include="Newtonsoft.Json" Version="11.0.1-beta1"/>
+    <PackageReference Include="Newtonsoft.Json" Version="11.0.2"/>
     <PackageReference Include="EdCanHack.DiceNotation" Version="0.2.0"/>
     <PackageReference Include="EdCanHack.DiceNotation.MathNet" Version="0.2.0"/>
     <PackageReference Include="Discord.Net.Commands" Version="1.0.2"/>
