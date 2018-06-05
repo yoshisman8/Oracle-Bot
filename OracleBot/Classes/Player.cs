@@ -30,11 +30,17 @@ namespace OracleBot.Classes
         public List<Skill> Skills {get;set;} = new List<Skill>();
         public List<Ability> Abilities {get;set;} = new List<Ability>();
         public List<Item> Inventory {get;set;} = new List<Item>();
+        public int Wallet {get;set;} = 0;
+        public char Currency {get;set;} = '$';
 
         public Embed GetSheet(){
             var eb = new EmbedBuilder()
                 .WithTitle(Name + " the "+ Race + " " + Class)
-                .AddField("Ability Scores", "```ini\n💓 STR | "+AbilityScores[0].GetValue()+" ["+ AbilityScores[0].GetMod()+"]\n💚 DEX | "+AbilityScores[1].GetValue()+" ["+ AbilityScores[1].GetMod()+"]\n💛 CON | "+AbilityScores[2].GetValue()+" ["+ AbilityScores[2].GetMod()+"]\n💙 INT | "+AbilityScores[3].GetValue()+" ["+ AbilityScores[3].GetMod()+"]\n💜 WIS |"+AbilityScores[4].GetValue()+"["+ AbilityScores[4].GetMod()+"]```")
+                .AddField("Ability Scores", "```ini\n💓 STR | "+AbilityScores[0].GetValue()+" ["+ AbilityScores[0].GetMod()+"] "+AbilityScores[0].IsProficient()+
+                "\n💚 DEX | "+AbilityScores[1].GetValue()+" ["+ AbilityScores[1].GetMod()+"] "+AbilityScores[1].IsProficient()+
+                "\n💛 CON | "+AbilityScores[2].GetValue()+" ["+ AbilityScores[2].GetMod()+"] "+AbilityScores[2].IsProficient()+
+                "\n💙 INT | "+AbilityScores[3].GetValue()+" ["+ AbilityScores[3].GetMod()+"] "+AbilityScores[3].IsProficient()+
+                "\n💜 WIS | "+AbilityScores[4].GetValue()+" ["+ AbilityScores[4].GetMod()+"] "+AbilityScores[4].IsProficient()+"```",true)
                 .AddField("Statistics", "```css\n🔰 Level: "+ Health.Level+"\n🛡 Armor Class: "+ArmorClass+"\n🔴 Health: ["+Health.Current+"/"+Health.GetHealth(AbilityScores[2].GetValue())+"]\n💮 Profficiency: "+Profiency+"```",true)
                 .WithThumbnailUrl(Image);
             var sb = new StringBuilder();
@@ -47,6 +53,14 @@ namespace OracleBot.Classes
                 sb.Clear();
             }
 
+            if (Abilities.Count == 0) eb.AddField("Abilities", "Use `.NewAbility Name Description` to add.", true);
+            else {
+                foreach(var x in Abilities){
+                    sb.AppendLine("• "+x.Name);
+                }
+                eb.AddField("Abilities", sb.ToString(),true);
+                sb.Clear();
+            }
 
             if (Skills.Count == 0) eb.AddField("Skills","Use `.NewSkill Name Ability_Score Proficiency(y/n/e)` to add.",true);
             else{
@@ -56,17 +70,19 @@ namespace OracleBot.Classes
                 eb.AddField("Skills",sb.ToString(),true);
                 sb.Clear();
             }
-
-
-
+            sb.AppendLine(Currency+" "+Wallet);
+            foreach (var x in Inventory){
+                sb.AppendLine("• "+x.Name+" (x"+x.Ammount+")");
+            }
+            eb.AddField("Inventory",sb.ToString(),true);
+            sb.Clear();
             return eb.Build();
         }
     }
     public class HealthBlock {
-        public int Level {get;set;}
-        public int Health {get;set;}
-        public int Extra {get;set;}
-        public int Current {get;set;}
+        public int Level {get;set;} = 1;
+        public int Extra {get;set;} = 0;
+        public int Current {get;set;} =5;
 
         [BsonIgnore]
         public Dictionary<int,int> values = new Dictionary<int, int>(){
@@ -76,7 +92,7 @@ namespace OracleBot.Classes
         };
 
         public int GetHealth(string Constitution){
-            return values.GetValueOrDefault(int.Parse(Constitution));
+            return values.GetValueOrDefault(int.Parse(Constitution))+Extra;
         }
     }
     public class AbScore{
@@ -85,6 +101,11 @@ namespace OracleBot.Classes
         public Proficiency Proficient {get;set;} = Proficiency.Untrained;
         public string GetValue(){
             return String.Format("{0:00}",(Value + Extra));
+        }
+        public string IsProficient(){
+            if (Proficient == Proficiency.Proficient) return "⭐";
+            if (Proficient == Proficiency.Expert) return "🌟";
+            else return "";
         }
         public string GetMod(){
             double mod = ((Value+Extra)-10)/2;
@@ -111,4 +132,5 @@ namespace OracleBot.Classes
     public enum AbilityScores {Strength = 0, Dexterity = 1, Constitution = 2, Intelligance = 3, Wisdom = 4}
     public enum AbilityShort {STR = 0, DEX = 1, CON = 2, INT = 3, WIS = 4}
     public enum Proficiency {Untrained = 0, Proficient = 1, Expert = 2}
+
 }
