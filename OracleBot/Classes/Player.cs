@@ -14,8 +14,8 @@ namespace OracleBot.Classes
         [BsonRef("Characters")]
         public Character Character {get;set;}
         [BsonRef("Characters")]
-        public List<Character> Characters {get;set;}
-        public List<Item> ItemVault {get;set;}
+        public List<Character> Characters {get;set;} = new List<Character>();
+        public List<Item> ItemVault {get;set;} = new List<Item>();
 
         public Embed BuildProfile(SocketCommandContext Context, LiteDatabase Database){
             var user = Context.Client.GetUser(DiscordId);
