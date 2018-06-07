@@ -4,6 +4,8 @@ using Microsoft.Extensions.Configuration;
 using System.Threading.Tasks;
 using System;
 using LiteDB;
+using Discord;
+using System.Linq;
 
 namespace OracleBot.Services
 {
@@ -31,8 +33,18 @@ namespace OracleBot.Services
             _database = database;
 
             _discord.MessageReceived += OnMessageReceivedAsync;
+            _discord.MessageUpdated += OnMessageUpdateAsync;
         }
-        
+
+        private async Task OnMessageUpdateAsync(Cacheable<IMessage, ulong> Original, SocketMessage msg, ISocketMessageChannel Channel)
+        {
+            if (msg == null) return;
+            if (msg.Author.IsBot) return;
+            if (msg.Author.Id == _discord.CurrentUser.Id) return;
+
+            await OnMessageReceivedAsync(msg);
+        }
+
         private async Task OnMessageReceivedAsync(SocketMessage s)
         {
             var msg = s as SocketUserMessage;     // Ensure the message is from a user/bot
@@ -46,8 +58,41 @@ namespace OracleBot.Services
             {
                 var result = await _commands.ExecuteAsync(context, argPos, _provider);     // Execute the command
 
-                if (!result.IsSuccess && result.Error != CommandError.UnknownCommand)     // If not successful, reply with the error.
-                    await context.Channel.SendMessageAsync(result.ToString());
+                if (!result.IsSuccess && result.Error == CommandError.BadArgCount)  {
+                    var DMs = await context.User.GetOrCreateDMChannelAsync();
+                    string command = msg.Content.Split(' ')[0].Substring(1);
+                    var res = _commands.Search(context, command);
+
+                    if (!res.IsSuccess)
+                    {
+                        await DMs.SendMessageAsync($"Sorry, I couldn't find a command like **{command}**.");
+                        return;
+                    }
+
+                    string prefix = _config["prefix"];
+                    var builder = new EmbedBuilder()
+                    {
+                        Color = new Color(114, 137, 218),
+                        Description = $"Here are some commands like **{command}**\n"+
+                            "Note: If any field you're writing is multi world (except for .addchar, .delchar and .char) make sure to wrap the word on quotation marks like this: `.NewSkill \"Super Attack\" \"Does some super attack\"`."
+                    };
+
+                    foreach (var match in res.Commands)
+                    {
+                        var cmd = match.Command;
+
+                        builder.AddField(x =>
+                        {
+                            x.Name = string.Join(", ", cmd.Aliases);
+                            x.Value = $"Parameters: {string.Join(", ", cmd.Parameters.Select(p => p.Name))}\n" + 
+                                    $"Summary: {cmd.Summary}";
+                            x.IsInline = false;
+                        });
+                    }
+
+                    await DMs.SendMessageAsync("", false, builder.Build());
+                }   // If not successful, reply with the error.
+                    
             }
         }
     }
