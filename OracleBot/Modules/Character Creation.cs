@@ -16,7 +16,7 @@ namespace OracleBot.Modules
     {
         public LiteDatabase Database {get;set;}
 
-        [Command("NewCharacter"), Alias("CreateCharacter","NewChar","CreateChar")]
+        [Command("NewCharacter"), Alias("CreateCharacter","NewChar","CreateChar","AddChar","AddCharacter")]
         [Summary("Creates a new character and assignes it to you! Usage: `.NewChar Character_Name1.")]
         public async Task NewChar([Remainder] string Name){
             var col = Database.GetCollection<Character>("Characters");
@@ -31,7 +31,8 @@ namespace OracleBot.Modules
             for (int x = 0; x <5;x++){
                 character.AbilityScores[x] = new AbScore();
             }
-            character.ID = col.Insert(character);            
+            col.Insert(character);
+            character = col.FindOne(x => x.Name == character.Name.ToLower());            
             col.EnsureIndex("Name","LOWER($.Name)");
 
             if (!players.Exists(x => x.DiscordId == Context.User.Id)){
@@ -44,8 +45,10 @@ namespace OracleBot.Modules
             else {
                 var plr = players.FindOne(x => x.DiscordId == Context.User.Id);
                 plr.Character = character;
+                players.Update(plr);
             }
             await ReplyAsync(Context.User.Mention+", Character **"+character.Name+"** was created successfuly! Make sure to consult the help files on `.help basics` to complete its set up.");
+            await Context.Message.DeleteAsync();
         }
 
         [Command("DeleteCharacter"), Alias("DeleteChar","DelChar","DelCharacter")]
@@ -64,7 +67,7 @@ namespace OracleBot.Modules
                 {
                     msg += "`" + q.Name + "` ";
                 }
-                await ReplyAndDeleteAsync(msg.Substring(0,msg.Length-2), timeout: TimeSpan.FromSeconds(5));
+                await ReplyAndDeleteAsync(msg.Substring(0,msg.Length-2), timeout: TimeSpan.FromSeconds(10));
                 return;
             }
             else if (Query.Count() == 1){
@@ -77,10 +80,11 @@ namespace OracleBot.Modules
                 else {
                     col.Delete(character.ID);
                     await ReplyAsync(Context.User.Mention+", **"+character.Name+"** has been deleted from the database.");
+                    await Context.Message.DeleteAsync();
                 }
             }
         }
-        [Command("Character"), Alias("Char")]
+        [Command("Character"), Alias("Char","C")]
         [Summary("Show your character or someone else's character. Usage: `.Char Character_name`. Leave empty to show the character you're locked into.")]
         public async Task Get([Remainder] string Name = ""){
             var players = Database.GetCollection<player>("Players");
@@ -92,7 +96,7 @@ namespace OracleBot.Modules
                 }
                 var plr = players
                     .Include(x => x.Character)
-                    .Include(x => x.Character.AbilityScores)
+                    .Include(x => x.Character.AbilityScores) .Include(x => x.Character.Skills)
                     .FindOne(x => x.DiscordId == Context.User.Id);
                 if (plr.Character == null){
                     await ReplyAndDeleteAsync(Context.User.Mention+", you're not locked to a character! Use `.lock Character_Name` to lock into a character.",false,null,TimeSpan.FromSeconds(5));
@@ -101,6 +105,7 @@ namespace OracleBot.Modules
                 else{
                     var chr = plr.Character;
                     await ReplyAsync("",false,chr.GetSheet());
+                    await Context.Message.DeleteAsync();
                 }
             }
             else{
@@ -115,12 +120,125 @@ namespace OracleBot.Modules
                     {
                         msg += "`" + q.Name + "` ";
                     }
-                    await ReplyAndDeleteAsync(msg.Substring(0,msg.Length-2), timeout: TimeSpan.FromSeconds(5));
+                    await ReplyAndDeleteAsync(msg.Substring(0,msg.Length-2), timeout: TimeSpan.FromSeconds(10));
                     return;
                 }
                 else if (Query.Count() == 1 || Query.ToList().Exists(x => x.Name.ToLower() == Name.ToLower())){
                     var chr = Query.FirstOrDefault();
                     await ReplyAsync("",false,chr.GetSheet());
+                    await Context.Message.DeleteAsync();
+                }
+            }
+        }
+        [Command("Traits"), Alias("Trait")]
+        [Summary("Shows the Traits of someone else's character in detail. Usage: `.Trait Character_Name`. Use this command without a name to see your locked character's traits.")]
+        public async Task getskills([Remainder] string Name = ""){
+            var players = Database.GetCollection<player>("Players");
+            var col = Database.GetCollection<Character>("Characters");
+            if (Name == "" || Name == null){
+                if (!players.Exists(x => x.DiscordId == Context.User.Id)){
+                    await ReplyAndDeleteAsync(Context.User.Mention+", you've never made any character so I can't find your character! Please make one with `.newchar Name`!", timeout: TimeSpan.FromSeconds(5));
+                    return;
+                }
+                var plr = players
+                    .Include(x => x.Character)
+                    .Include(x => x.Character.AbilityScores) .Include(x => x.Character.Skills)
+                    .FindOne(x => x.DiscordId == Context.User.Id);
+                if (plr.Character == null){
+                    await ReplyAndDeleteAsync(Context.User.Mention+", you're not locked to a character! Use `.lock Character_Name` to lock into a character.",false,null,TimeSpan.FromSeconds(5));
+                    return;
+                }
+                else{
+                    var chr = plr.Character;
+                    var embed = new EmbedBuilder()
+                        .WithTitle(chr.Name+"'s Traits");
+                    foreach(var x in chr.Traits){
+                        embed.AddField(x.Name,x.Description);
+                    }
+                    await ReplyAsync("",false,embed.Build());
+                    await Context.Message.DeleteAsync();
+                }
+            }
+            else{
+                var Query = col.Find(x => x.Name.StartsWith(Name.ToLower()));
+                if(Query.Count() == 0) {
+                    await ReplyAndDeleteAsync(Context.User.Mention+", There is no character with that name on the database.", timeout: TimeSpan.FromSeconds(5));
+                    return;
+                }
+                else if (Query.Count() > 1 && !Query.ToList().Exists(x => x.Name.ToLower() == Name.ToLower())){
+                    string msg = Context.User.Mention+", Multiple charactes were found! Please specify which one of the following characters is the one you're looking for: ";
+                    foreach (var q in Query)
+                    {
+                        msg += "`" + q.Name + "` ";
+                    }
+                    await ReplyAndDeleteAsync(msg.Substring(0,msg.Length-2), timeout: TimeSpan.FromSeconds(10));
+                    return;
+                }
+                else if (Query.Count() == 1 || Query.ToList().Exists(x => x.Name.ToLower() == Name.ToLower())){
+                    var chr = Query.FirstOrDefault();
+                    var embed = new EmbedBuilder()
+                        .WithTitle(chr.Name+"'s Traits");
+                    foreach(var x in chr.Traits){
+                        embed.AddField(x.Name,x.Description);
+                    }
+                    await ReplyAsync("",false,embed.Build());
+                    await Context.Message.DeleteAsync();
+                }
+            }
+        }
+        [Command("Abilities"), Alias("Abilities", "ABs")]
+        [Summary("Shows the Abilities of someone else's character in detail. Usage: `.Abilities Character_Name`. Use this command without a name to see your locked character's Abilities.")]
+        public async Task getabs([Remainder] string Name = ""){
+            var players = Database.GetCollection<player>("Players");
+            var col = Database.GetCollection<Character>("Characters");
+            if (Name == "" || Name == null){
+                if (!players.Exists(x => x.DiscordId == Context.User.Id)){
+                    await ReplyAndDeleteAsync(Context.User.Mention+", you've never made any character so I can't find your character! Please make one with `.newchar Name`!", timeout: TimeSpan.FromSeconds(5));
+                    return;
+                }
+                var plr = players
+                    .Include(x => x.Character)
+                    .Include(x => x.Character.AbilityScores) .Include(x => x.Character.Skills)
+                    .FindOne(x => x.DiscordId == Context.User.Id);
+                if (plr.Character == null){
+                    await ReplyAndDeleteAsync(Context.User.Mention+", you're not locked to a character! Use `.lock Character_Name` to lock into a character.",false,null,TimeSpan.FromSeconds(5));
+                    return;
+                }
+                else{
+                    var chr = plr.Character;
+                    var embed = new EmbedBuilder()
+                        .WithTitle(chr.Name+"'s Abilities");
+                    foreach(var x in chr.Abilities){
+                        embed.AddField(x.Name,x.Description);
+                    }
+                    await ReplyAsync("",false,embed.Build());
+                    await Context.Message.DeleteAsync();
+                }
+            }
+            else{
+                var Query = col.Find(x => x.Name.StartsWith(Name.ToLower()));
+                if(Query.Count() == 0) {
+                    await ReplyAndDeleteAsync(Context.User.Mention+", There is no character with that name on the database.", timeout: TimeSpan.FromSeconds(5));
+                    return;
+                }
+                else if (Query.Count() > 1 && !Query.ToList().Exists(x => x.Name.ToLower() == Name.ToLower())){
+                    string msg = Context.User.Mention+", Multiple charactes were found! Please specify which one of the following characters is the one you're looking for: ";
+                    foreach (var q in Query)
+                    {
+                        msg += "`" + q.Name + "` ";
+                    }
+                    await ReplyAndDeleteAsync(msg.Substring(0,msg.Length-2), timeout: TimeSpan.FromSeconds(10));
+                    return;
+                }
+                else if (Query.Count() == 1 || Query.ToList().Exists(x => x.Name.ToLower() == Name.ToLower())){
+                    var chr = Query.FirstOrDefault();
+                    var embed = new EmbedBuilder()
+                        .WithTitle(chr.Name+"'s Abilities");
+                    foreach(var x in chr.Abilities){
+                        embed.AddField(x.Name,x.Description);
+                    }
+                    await ReplyAsync("",false,embed.Build());
+                    await Context.Message.DeleteAsync();
                 }
             }
         }

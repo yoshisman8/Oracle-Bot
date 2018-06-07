@@ -67,7 +67,7 @@ namespace OracleBot.Modules
             {
                 Color = new Color(114, 137, 218),
                 Description = $"Here are some commands like **{command}**\n"+
-                "Note: fields surounded by <> are mandatory while fields surounded by [] are optional. Do **not** do `.Command <text>` when sending the commands, you are not supposed to wrap words around <> or []."
+                    "Note: If any field you're writing is multi world (except for .addchar, .delchar and .char) make sure to wrap the word on quotation marks like this: `.NewSkill \"Super Attack\" \"Does some super attack\"`."
             };
 
             foreach (var match in result.Commands)

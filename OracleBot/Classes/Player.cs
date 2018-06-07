@@ -19,14 +19,15 @@ namespace OracleBot.Classes
         public int ID {get;set;}
         public ulong Owner {get;set;}
         public string Name {get;set;}
-        public string Image {get;set;} = "";
+        public string Image {get;set;} = "https://media.discordapp.net/attachments/357593658586955776/454118701592215554/user-black-close-up-shape.png";
+        public int[] Color {get;set;} = new int[3]{255,255,255};
         public HealthBlock Health {get;set;} = new HealthBlock();
         public string Class {get;set;} = "Classless";
         public string Race {get;set;} = "Generic";
         public AbScore[] AbilityScores {get;set;} = new AbScore[5]; //STR, DEX, CON, INT, WIS
         public int ArmorClass {get;set;} = 10;
         public int Profiency {get;set;} = 2;
-        public List<Skill> Traits {get;set;} = new List<Skill>();
+        public List<Ability> Traits {get;set;} = new List<Ability>();
         public List<Skill> Skills {get;set;} = new List<Skill>();
         public List<Ability> Abilities {get;set;} = new List<Ability>();
         public List<Item> Inventory {get;set;} = new List<Item>();
@@ -36,13 +37,14 @@ namespace OracleBot.Classes
         public Embed GetSheet(){
             var eb = new EmbedBuilder()
                 .WithTitle(Name + " the "+ Race + " " + Class)
-                .AddField("Ability Scores", "```ini\n💓 STR | "+AbilityScores[0].GetValue()+" ["+ AbilityScores[0].GetMod()+"] "+AbilityScores[0].IsProficient()+
-                "\n💚 DEX | "+AbilityScores[1].GetValue()+" ["+ AbilityScores[1].GetMod()+"] "+AbilityScores[1].IsProficient()+
-                "\n💛 CON | "+AbilityScores[2].GetValue()+" ["+ AbilityScores[2].GetMod()+"] "+AbilityScores[2].IsProficient()+
-                "\n💙 INT | "+AbilityScores[3].GetValue()+" ["+ AbilityScores[3].GetMod()+"] "+AbilityScores[3].IsProficient()+
-                "\n💜 WIS | "+AbilityScores[4].GetValue()+" ["+ AbilityScores[4].GetMod()+"] "+AbilityScores[4].IsProficient()+"```",true)
+                .AddField("Ability Scores", "```ini\n⚔️ STR | "+AbilityScores[0].GetValue()+" ["+ AbilityScores[0].GetMod()+"] "+AbilityScores[0].IsProficient()+
+                "\n🗡️ DEX | "+AbilityScores[1].GetValue()+" ["+ AbilityScores[1].GetMod()+"] "+AbilityScores[1].IsProficient()+
+                "\n💗 CON | "+AbilityScores[2].GetValue()+" ["+ AbilityScores[2].GetMod()+"] "+AbilityScores[2].IsProficient()+
+                "\n🧠 INT | "+AbilityScores[3].GetValue()+" ["+ AbilityScores[3].GetMod()+"] "+AbilityScores[3].IsProficient()+
+                "\n🧙 WIS | "+AbilityScores[4].GetValue()+" ["+ AbilityScores[4].GetMod()+"] "+AbilityScores[4].IsProficient()+"```",true)
                 .AddField("Statistics", "```css\n🔰 Level: "+ Health.Level+"\n🛡 Armor Class: "+ArmorClass+"\n🔴 Health: ["+Health.Current+"/"+Health.GetHealth(AbilityScores[2].GetValue())+"]\n💮 Profficiency: "+Profiency+"```",true)
-                .WithThumbnailUrl(Image);
+                .WithThumbnailUrl(Image)
+                .WithColor(new Color(Color[0],Color[1],Color[2]));
             var sb = new StringBuilder();
             if (Traits.Count == 0) eb.AddField("Traits","Use `.NewTrait Name Description` to add.",true);
             else{
@@ -78,6 +80,9 @@ namespace OracleBot.Classes
             sb.Clear();
             return eb.Build();
         }
+        public void Fullheal(){
+            Health.Current = Health.GetHealth(AbilityScores[2].GetValue());
+        }
     }
     public class HealthBlock {
         public int Level {get;set;} = 1;
@@ -92,14 +97,18 @@ namespace OracleBot.Classes
         };
 
         public int GetHealth(string Constitution){
-            return values.GetValueOrDefault(int.Parse(Constitution))+Extra;
+            var tot = (values.GetValueOrDefault(int.Parse(Constitution))*Level)+Extra;
+            return tot;
         }
     }
     public class AbScore{
         public int Value {get;set;} = 10;
         public int Extra {get;set;} = 0;
         public Proficiency Proficient {get;set;} = Proficiency.Untrained;
-        public string GetValue(){
+        public string GetValue(bool Int = false){
+            if (Int){
+                return (Value+Extra).ToString();
+            }
             return String.Format("{0:00}",(Value + Extra));
         }
         public string IsProficient(){
@@ -107,10 +116,13 @@ namespace OracleBot.Classes
             if (Proficient == Proficiency.Expert) return "🌟";
             else return "";
         }
-        public string GetMod(){
+        public string GetMod(bool Int = false){
             double mod = ((Value+Extra)-10)/2;
             mod = Math.Floor(mod);
-            if (mod > 0) return mod.ToString();
+            if (Int) return mod.ToString();
+            if (mod < 0) return mod.ToString();
+            if (mod == 0) return "--";
+            if (mod > 0 && mod < 10) return "+"+mod.ToString();
             return String.Format("{0:00}",mod);
         }
     }
@@ -122,7 +134,7 @@ namespace OracleBot.Classes
     public class Skill {
         public string Name {get;set;}
         public AbilityShort Ability {get;set;}
-        public Proficiency Proficiency = Proficiency.Untrained;
+        public Proficiency Proficiency {get;set;} = Proficiency.Untrained;
     }
     public class Item {
         public string Name {get;set;} = "";
