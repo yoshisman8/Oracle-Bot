@@ -19,13 +19,15 @@ namespace OracleBot.Classes
 
         public Embed BuildProfile(SocketCommandContext Context, LiteDatabase Database){
             var user = Context.Client.GetUser(DiscordId);
+            var db = Database.GetCollection<Character>("Characters");
+            db.EnsureIndex(x => x.Owner);
             var sb = new StringBuilder();
             var embed = new EmbedBuilder()
             .WithTitle(user.Username)
             .WithThumbnailUrl(user.GetAvatarUrl());
             if (Character == null) embed.AddField("Locked as","No one",true);
-            else embed.AddField("Locked as",Character.Name,true);
-            foreach(var x in Characters){
+            else embed.AddField("Currently Playing",Character.Name,true);
+            foreach(var x in db.Find(x=> x.Owner == user.Id)){
                 sb.AppendLine("• "+x.Name);
             }
             if (sb.Length == 0) sb.Append(user.Username+" doesn't have any characters.");
