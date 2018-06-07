@@ -198,5 +198,17 @@ namespace OracleBot.Modules
                 await Context.Message.DeleteAsync();
             }
         }
+
+        [Command("GenerateAbilityScores"),Alias("RollAbilityScores", "GenerateAB","RollAB")]
+        [Summary("Rolls Five values that can be used as Ability Scores.")]
+        public async Task Rollstats(){
+            var sb = new StringBuilder();
+            for (int i = 0; i <5 ; i++){
+                var result = parser.Parse("4d6k3").Roll();
+                sb.Append("[**"+result.Value+"**] ");
+            }
+            await ReplyAsync(Context.User.Mention+", Here are your 5 Ability Scores: "+sb.ToString());
+            await Context.Message.DeleteAsync();
+        }
     }
 }

@@ -12,7 +12,7 @@ using OracleBot.Classes;
 
 namespace OracleBot.Modules
 {
-    public class CharacterEditing : InteractiveBase<SocketCommandContext>
+    public class Character_Editing : InteractiveBase<SocketCommandContext>
     {
         public LiteDatabase Database {get;set;}
         [Command("SetScore")]

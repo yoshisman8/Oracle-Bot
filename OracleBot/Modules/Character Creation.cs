@@ -12,7 +12,7 @@ using OracleBot.Classes;
 
 namespace OracleBot.Modules
 {
-    public class CharacterCreation : InteractiveBase<SocketCommandContext>
+    public class Main_Commands : InteractiveBase<SocketCommandContext>
     {
         public LiteDatabase Database {get;set;}
 
@@ -241,6 +241,40 @@ namespace OracleBot.Modules
                     await Context.Message.DeleteAsync();
                 }
             }
+        }
+        [Command("Characters"), Alias("Chars")]
+        [Summary("Lists all the characters on the database. Usage: `.Chars SingleLetter`")]
+        public async Task allchars(char FirstLetter = ' '){
+            var col = Database.GetCollection<Character>("Characters");
+            var all = col.FindAll();
+            var embed = new EmbedBuilder()
+                .WithTitle("Character list");
+            var sb = new StringBuilder();
+            if (FirstLetter != ' '){
+                var Query = col.Find(x => x.Name.StartsWith(FirstLetter.ToString().ToLower()));
+                if (Query.Count() == 0){ await ReplyAndDeleteAsync(Context.User.Mention+", there are no characters whose name start with "+FirstLetter+".",timeout: TimeSpan.FromSeconds(5)); return;}
+                else{
+                    foreach (var x in Query){
+                        sb.AppendLine("• "+x.Name);
+                    }
+                    embed.AddField(FirstLetter.ToString(),sb.ToString());
+                    await ReplyAsync("",false,embed.Build());
+                    await Context.Message.DeleteAsync();
+                    return;
+                }
+            }
+            for (char c = 'a'; c <= 'z'; c++)
+            {
+                var Query = col.Find(x => x.Name.StartsWith(c));
+                if (Query.Count() == 0) continue;
+                foreach(var x in Query){
+                    sb.AppendLine("• "+x.Name);
+                }
+                embed.AddField(c.ToString().ToUpper(),sb.ToString(),true);
+                sb.Clear();
+            }
+            await ReplyAsync("",false,embed.Build());
+            await Context.Message.DeleteAsync();
         }
     }
 }
