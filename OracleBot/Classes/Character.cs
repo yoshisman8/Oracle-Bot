@@ -79,6 +79,26 @@ namespace OracleBot.Classes
         public void Fullheal(){
             Health.Current = Health.GetHealth(AbilityScores[2].GetValue());
         }
+        public void BuildInventory(LiteDatabase Database, player player){
+            var col = Database.GetCollection<Item>("Items");
+            foreach(var x in Inventory){
+                if (col.Exists(y => y.Id == x.Item.Id)){
+                    var item = col.FindOne(y => y.Id == x.Item.Id);
+                    x.Item.Name = item.Name;
+                    x.Item.Description = item.Description;
+                    x.Item.Macro = item.Macro;
+                }
+                else if(player.ItemVault.Exists(y => y.Name.ToLower() == x.Item.Name.ToLower())){
+                    var item = player.ItemVault.Find(y => y.Name.ToLower() == x.Item.Name.ToLower());
+                    x.Item.Name = item.Name;
+                    x.Item.Description = item.Description;
+                    x.Item.Macro = item.Macro;
+                }
+                else {
+                    Inventory.Remove(x);
+                }
+            }
+        }
     }
     public class HealthBlock {
         public int Level {get;set;} = 1;

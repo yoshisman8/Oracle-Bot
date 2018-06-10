@@ -18,6 +18,11 @@ namespace OracleBot.Modules
         [Command("SetScore")]
         [Summary("Set your locked character's ability score. Usage: `.SetScore AbScore Value Proficiency` valid Scores are `STR/DEX/CON/INT/WIS` and Proficiencies are `Untrained/Proficient/Expert`. All case sensitive.")]
         public async Task SetAbScore(AbilityShort Score, int Value, Proficiency Prof = Proficiency.Untrained){
+            Value = Math.Abs(Value);
+            if (Value > 30){
+                await ReplyAndDeleteAsync(Context.User.Mention+", You can't set ability scores higher than 30!", timeout: TimeSpan.FromSeconds(5));
+                return;
+            }
             var players = Database.GetCollection<player>("Players");
             var col = Database.GetCollection<Character>("Characters");
             if (!players.Exists(x => x.DiscordId == Context.User.Id)){
@@ -45,6 +50,11 @@ namespace OracleBot.Modules
         [Summary("Set your locked character's extra ability score bonus. Usage: `.SetEScore AbScore Value Proficiency`.\n"+
             "Valid Scores are `STR/DEX/CON/INT/WIS` and Proficiencies are `Untrained/Proficient/Expert`. All case sensitive.")]        
         public async Task SetEAbScore(AbilityShort Score, int Value, Proficiency Prof = Proficiency.Untrained){
+            Value = Math.Abs(Value);
+            if (Value > 30){
+                await ReplyAndDeleteAsync(Context.User.Mention+", You can't set ability scores higher than 30!", timeout: TimeSpan.FromSeconds(5));
+                return;
+            }
             var players = Database.GetCollection<player>("Players");
             var col = Database.GetCollection<Character>("Characters");
             if (!players.Exists(x => x.DiscordId == Context.User.Id)){
@@ -340,6 +350,10 @@ namespace OracleBot.Modules
         [Command("SetColor")]
         [Summary("Sets the color of the vertical bar on your character sheet. Usage: `.Color RED BLUE GREEN` All values are from 0-255.")]
         public async Task SetColor(int R, int B, int G){
+            if ((R < 0 || G < 0 || B < 0) || (R > 255 || G > 255 || B > 255)){
+                await ReplyAndDeleteAsync(Context.User.Mention+", RGB values go from 0 to 255. Please use correct values!", timeout: TimeSpan.FromSeconds(5));
+                return;
+            }
             var players = Database.GetCollection<player>("Players");
             var col = Database.GetCollection<Character>("Characters");
             if (!players.Exists(x => x.DiscordId == Context.User.Id)){
@@ -414,6 +428,7 @@ namespace OracleBot.Modules
         [Command("SetAC"), Alias("SetArmorClass")]
         [Summary("Sets the Armor Class of your character. Usage: `.SetAC ArmorClass`.")]
         public async Task SetAC([Remainder]int AC){
+            AC = Math.Abs(AC);
             var players = Database.GetCollection<player>("Players");
             var col = Database.GetCollection<Character>("Characters");
             if (!players.Exists(x => x.DiscordId == Context.User.Id)){
@@ -438,6 +453,7 @@ namespace OracleBot.Modules
         [Command("SetHP")]
         [Summary("Sets the your character's extra HP (adds on top of your CON-based HP). Usage: `.SetHP HealthValue`.")]
         public async Task SetHP([Remainder]int HP){
+            HP = Math.Abs(HP);
             var players = Database.GetCollection<player>("Players");
             var col = Database.GetCollection<Character>("Characters");
             if (!players.Exists(x => x.DiscordId == Context.User.Id)){
@@ -462,6 +478,7 @@ namespace OracleBot.Modules
         [Command("LevelUp"), Alias("LU")]
         [Summary("Increases your locked character's level (1 by default). Usage `.LU Amount`. Defaults to 1 level if left empty.")]
         public async Task LevelUp([Remainder]int Levels = 1){
+            Levels = Math.Abs(Levels);
             var players = Database.GetCollection<player>("Players");
             var col = Database.GetCollection<Character>("Characters");
             if (!players.Exists(x => x.DiscordId == Context.User.Id)){
@@ -487,6 +504,7 @@ namespace OracleBot.Modules
         [Command("LevelDown"), Alias("LD")]
         [Summary("Decreases your locked character's level (1 by default). Usage `.LD Amount`. Defaults to 1 level if left empty.")]
         public async Task LevelDown([Remainder]int Levels = 1){
+            Levels = Math.Abs(Levels);
             var players = Database.GetCollection<player>("Players");
             var col = Database.GetCollection<Character>("Characters");
             if (!players.Exists(x => x.DiscordId == Context.User.Id)){
@@ -512,6 +530,7 @@ namespace OracleBot.Modules
         [Command("SetProf"), Alias("SetProficiency")]
         [Summary("Set's your character's proficiency bonus. Usage: `.SetProf Amount`")]
         public async Task SetProf([Remainder]int Amount = 1){
+            Amount = Math.Abs(Amount);
             var players = Database.GetCollection<player>("Players");
             var col = Database.GetCollection<Character>("Characters");
             if (!players.Exists(x => x.DiscordId == Context.User.Id)){

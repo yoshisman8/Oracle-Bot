@@ -89,21 +89,22 @@ namespace OracleBot.Modules
         public async Task Get([Remainder] string Name = ""){
             var players = Database.GetCollection<player>("Players");
             var col = Database.GetCollection<Character>("Characters");
-            if (Name == "" || Name == null){
-                if (!players.Exists(x => x.DiscordId == Context.User.Id)){
+            if (!players.Exists(x => x.DiscordId == Context.User.Id)){
                     await ReplyAndDeleteAsync(Context.User.Mention+", you've never made any character so I can't find your character! Please make one with `.newchar Name`!", timeout: TimeSpan.FromSeconds(5));
                     return;
                 }
-                var plr = players
-                    .Include(x => x.Character)
-                    .Include(x => x.Character.AbilityScores) .Include(x => x.Character.Skills)
-                    .FindOne(x => x.DiscordId == Context.User.Id);
+            var plr = players
+                .Include(x => x.Character)
+                .Include(x => x.Character.AbilityScores) .Include(x => x.Character.Skills)
+                .FindOne(x => x.DiscordId == Context.User.Id);
+            if (Name == "" || Name == null){
                 if (plr.Character == null){
                     await ReplyAndDeleteAsync(Context.User.Mention+", you're not locked to a character! Use `.lock Character_Name` to lock into a character.",false,null,TimeSpan.FromSeconds(5));
                     return;
                 }
                 else{
                     var chr = plr.Character;
+                    chr.BuildInventory(Database,plr);
                     await ReplyAsync("",false,chr.GetSheet());
                     await Context.Message.DeleteAsync();
                 }
@@ -125,6 +126,7 @@ namespace OracleBot.Modules
                 }
                 else if (Query.Count() == 1 || Query.ToList().Exists(x => x.Name.ToLower() == Name.ToLower())){
                     var chr = Query.FirstOrDefault();
+                    chr.BuildInventory(Database,plr);
                     await ReplyAsync("",false,chr.GetSheet());
                     await Context.Message.DeleteAsync();
                 }
