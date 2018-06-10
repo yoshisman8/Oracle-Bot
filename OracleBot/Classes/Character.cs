@@ -25,7 +25,8 @@ namespace OracleBot.Classes
         public List<Ability> Traits {get;set;} = new List<Ability>();
         public List<Skill> Skills {get;set;} = new List<Skill>();
         public List<Ability> Abilities {get;set;} = new List<Ability>();
-        public List<Item> Inventory {get;set;} = new List<Item>();
+        [BsonRef("Items")]
+        public List<PlayerItem> Inventory {get;set;} = new List<PlayerItem>();
         public int Wallet {get;set;} = 0;
         public char Currency {get;set;} = '$';
 
@@ -67,9 +68,9 @@ namespace OracleBot.Classes
                 eb.AddField("Skills",sb.ToString(),true);
                 sb.Clear();
             }
-            sb.AppendLine(Currency+" "+Wallet);
+            sb.AppendLine(Currency+Wallet.ToString());
             foreach (var x in Inventory){
-                sb.AppendLine("• "+x.Name+" (x"+x.Ammount+")");
+                sb.AppendLine("• "+x.Item.Name+" (x"+x.Quantity+")");
             }
             eb.AddField("Inventory",sb.ToString(),true);
             sb.Clear();
@@ -82,7 +83,7 @@ namespace OracleBot.Classes
     public class HealthBlock {
         public int Level {get;set;} = 1;
         public int Extra {get;set;} = 0;
-        public int Current {get;set;} =5;
+        public int Current {get;set;} = 5;
 
         [BsonIgnore]
         public Dictionary<int,int> values = new Dictionary<int, int>(){
@@ -132,9 +133,15 @@ namespace OracleBot.Classes
         public Proficiency Proficiency {get;set;} = Proficiency.Untrained;
     }
     public class Item {
+        [BsonId]
+        public int Id {get;set;}
         public string Name {get;set;} = "";
-        public int Ammount {get;set;} = 1;
         public string Description {get;set;} = "";
+        public string Macro {get;set;} = "";
+    }
+    public class PlayerItem{
+        public Item Item {get;set;}
+        public int Quantity {get;set;} = 1;
     }
     public enum AbilityScores {Strength = 0, Dexterity = 1, Constitution = 2, Intelligance = 3, Wisdom = 4}
     public enum AbilityShort {STR = 0, DEX = 1, CON = 2, INT = 3, WIS = 4}

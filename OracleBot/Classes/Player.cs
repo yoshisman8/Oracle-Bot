@@ -14,7 +14,6 @@ namespace OracleBot.Classes
         [BsonRef("Characters")]
         public Character Character {get;set;}
         [BsonRef("Characters")]
-        public List<Character> Characters {get;set;} = new List<Character>();
         public List<Item> ItemVault {get;set;} = new List<Item>();
 
         public Embed BuildProfile(SocketCommandContext Context, LiteDatabase Database){
@@ -25,10 +24,9 @@ namespace OracleBot.Classes
             var embed = new EmbedBuilder()
             .WithTitle(user.Username)
             .WithThumbnailUrl(user.GetAvatarUrl());
-            if (Character == null) embed.AddField("Locked as","No one",true);
-            else embed.AddField("Currently Playing",Character.Name,true);
             foreach(var x in db.Find(x=> x.Owner == user.Id)){
-                sb.AppendLine("• "+x.Name);
+                if (x.Name.ToLower() == Character.Name.ToLower()) sb.AppendLine("• **"+x.Name+"**");
+                else sb.AppendLine("• "+x.Name);
             }
             if (sb.Length == 0) sb.Append(user.Username+" doesn't have any characters.");
             embed.AddField("Characters",sb.ToString(),true);
