@@ -50,7 +50,7 @@ namespace OracleBot.Modules
                 players.Update(plr);
                 await ReplyAsync(Context.User.Mention+", Updated the item **"+item.Name+"** on your Item Vault.");
             }
-            
+
             else if (Global == ItemLocation.Global && ItemDb.Exists(x =>x.Name == Name.ToLower()) && User.GuildPermissions.ManageMessages){
                 var item = ItemDb.FindOne(x =>x.Name == Name.ToLower());
                 item.Description = Description;
