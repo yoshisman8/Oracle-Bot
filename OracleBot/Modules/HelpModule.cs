@@ -49,6 +49,7 @@ namespace OracleBot.Modules
             }
 
             await ReplyAsync("", false, builder.Build());
+            await Context.Message.DeleteAsync();
         }
 
         [Command("help")]
@@ -84,6 +85,7 @@ namespace OracleBot.Modules
             }
 
             await ReplyAsync("", false, builder.Build());
+            await Context.Message.DeleteAsync();
         }
     }
 }

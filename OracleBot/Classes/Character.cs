@@ -134,12 +134,19 @@ namespace OracleBot.Classes
         }
         public string GetMod(bool Int = false){
             double mod = ((Value+Extra)-10)/2;
-            mod = Math.Floor(mod);
+            if (mod < 0) mod = Math.Round(mod);
+            else mod = Math.Floor(mod);
             if (Int) return mod.ToString();
             if (mod < 0) return mod.ToString();
             if (mod == 0) return "--";
             if (mod > 0 && mod < 10) return "+"+mod.ToString();
             return String.Format("{0:00}",mod);
+        }
+        public int GetIntMod(){
+            double mod = ((Value+Extra)-10)/2;
+            if (mod < 0) mod = Math.Round(mod);
+            else mod = Math.Floor(mod);
+            return (int)mod;
         }
     }
     public class Ability{

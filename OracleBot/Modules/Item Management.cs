@@ -119,8 +119,8 @@ namespace OracleBot.Modules
         [Command("UploadItem")]
         [Summary("GM-Only command. Promotes an item to the global database. Usage: `.UploadItem PlayerName ItemName`")]
         public async Task PromoteItem(SocketGuildUser User, [Remainder] string Name){
-
-            if (!User.GuildPermissions.ManageMessages){
+            var usr = Context.User as SocketGuildUser;
+            if (!usr.GuildPermissions.ManageMessages){
                 await ReplyAndDeleteAsync(User.Mention+", You can't delete items from global database! Only GMs can do that.",timeout: TimeSpan.FromSeconds(5));
                 return;
             }
