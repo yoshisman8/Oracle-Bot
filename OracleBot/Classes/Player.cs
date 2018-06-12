@@ -13,7 +13,6 @@ namespace OracleBot.Classes
         public ulong DiscordId {get;set;}
         [BsonRef("Characters")]
         public Character Character {get;set;}
-        [BsonRef("Characters")]
         public List<Item> ItemVault {get;set;} = new List<Item>();
 
         public Embed BuildProfile(SocketCommandContext Context, LiteDatabase Database){

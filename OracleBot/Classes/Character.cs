@@ -25,10 +25,10 @@ namespace OracleBot.Classes
         public List<Ability> Traits {get;set;} = new List<Ability>();
         public List<Skill> Skills {get;set;} = new List<Skill>();
         public List<Ability> Abilities {get;set;} = new List<Ability>();
-        [BsonRef("Items")]
+        public List<Spell> SpellBook {get;set;} = new List<Spell>();
         public List<PlayerItem> Inventory {get;set;} = new List<PlayerItem>();
         public int Wallet {get;set;} = 0;
-        public char Currency {get;set;} = '$';
+        public bool CodeblockMode {get;set;} = false;
 
         public Embed GetSheet(){
             var eb = new EmbedBuilder()
@@ -38,7 +38,7 @@ namespace OracleBot.Classes
                 "\n💗 CON | "+AbilityScores[2].GetValue()+" ["+ AbilityScores[2].GetMod()+"] "+AbilityScores[2].IsProficient()+
                 "\n🧠 INT | "+AbilityScores[3].GetValue()+" ["+ AbilityScores[3].GetMod()+"] "+AbilityScores[3].IsProficient()+
                 "\n🧙 WIS | "+AbilityScores[4].GetValue()+" ["+ AbilityScores[4].GetMod()+"] "+AbilityScores[4].IsProficient()+"```",true)
-                .AddField("Statistics", "```css\n🔰 Level: "+ Health.Level+"\n🛡 Armor Class: "+ArmorClass+"\n🔴 Health: ["+Health.Current+"/"+Health.GetHealth(AbilityScores[2].GetValue())+"]\n💮 Proficiency: "+Profiency+"```",true)
+                .AddField("Statistics", "```css\n🔰 Level: "+ Health.Level+"\n🛡 Armor Class: "+ArmorClass+"\n🔴 Health: ["+Health.Current+"/"+Health.GetHealth(AbilityScores[2].GetValue())+"]\n💮 Proficiency: "+Profiency+"\n✨ Spells Known: "+SpellBook.Count+"```",true)
                 .WithThumbnailUrl(Image)
                 .WithColor(new Color(Color[0],Color[1],Color[2]));
             var sb = new StringBuilder();
@@ -47,7 +47,8 @@ namespace OracleBot.Classes
                 foreach(var x in Traits){
                     sb.AppendLine("• "+x.Name);
                 }
-                eb.AddField("Traits",sb.ToString(),true);
+                if (CodeblockMode) eb.AddField("Traits","```"+sb.ToString()+"```",true);
+                else eb.AddField("Traits",sb.ToString(),true);
                 sb.Clear();
             }
 
@@ -56,7 +57,8 @@ namespace OracleBot.Classes
                 foreach(var x in Abilities){
                     sb.AppendLine("• "+x.Name);
                 }
-                eb.AddField("Abilities", sb.ToString(),true);
+                if (CodeblockMode) eb.AddField("Abilities","```"+ sb.ToString()+"```",true);
+                else eb.AddField("Abilities", sb.ToString(),true);
                 sb.Clear();
             }
 
@@ -65,14 +67,16 @@ namespace OracleBot.Classes
                 foreach(var x in Skills){
                     sb.AppendLine("• "+x.Name+"("+x.Ability+") "+"["+x.Proficiency+"]");
                 }
-                eb.AddField("Skills",sb.ToString(),true);
+                if(CodeblockMode) eb.AddField("Skills","```ini\n"+sb.ToString()+"```",true);
+                else eb.AddField("Skills",sb.ToString(),true);
                 sb.Clear();
             }
-            sb.AppendLine(Currency+Wallet.ToString());
+            sb.AppendLine("$"+Wallet.ToString());
             foreach (var x in Inventory){
-                sb.AppendLine("• "+x.Item.Name+" (x"+x.Quantity+")");
+                sb.AppendLine("• "+x.Item.Name+" [x"+x.Quantity+"]");
             }
-            eb.AddField("Inventory",sb.ToString(),true);
+            if (CodeblockMode) eb.AddField("Inventory","```css\n"+sb.ToString()+"```",true);
+            else eb.AddField("Inventory",sb.ToString(),true);
             sb.Clear();
             return eb.Build();
         }
@@ -81,23 +85,34 @@ namespace OracleBot.Classes
         }
         public void BuildInventory(LiteDatabase Database, player player){
             var col = Database.GetCollection<Item>("Items");
+            var db = Database.GetCollection<Character>("Characters");
+            var buffer = new List<PlayerItem>();
             foreach(var x in Inventory){
-                if (col.Exists(y => y.Id == x.Item.Id)){
+                var index = Inventory.IndexOf(x);
+                if (x.Item.Id != -1 && col.Exists(y => y.Id == x.Item.Id)){
                     var item = col.FindOne(y => y.Id == x.Item.Id);
-                    x.Item.Name = item.Name;
-                    x.Item.Description = item.Description;
-                    x.Item.Macro = item.Macro;
+                    buffer.Add(new PlayerItem(){
+                        Item = item,
+                        Quantity = x.Quantity
+                        });
                 }
                 else if(player.ItemVault.Exists(y => y.Name.ToLower() == x.Item.Name.ToLower())){
                     var item = player.ItemVault.Find(y => y.Name.ToLower() == x.Item.Name.ToLower());
-                    x.Item.Name = item.Name;
-                    x.Item.Description = item.Description;
-                    x.Item.Macro = item.Macro;
+                    buffer.Add(new PlayerItem(){
+                        Item = item,
+                        Quantity = x.Quantity
+                        });
                 }
-                else {
-                    Inventory.Remove(x);
+                else if(!player.ItemVault.Exists(y => y.Name.ToLower() == x.Item.Name.ToLower()) && col.Exists(y => y.Name == x.Item.Name.ToLower())){
+                    var item = col.FindOne(y => y.Name == x.Item.Name.ToLower());
+                    buffer.Add(new PlayerItem(){
+                        Item = item,
+                        Quantity = x.Quantity
+                        });
                 }
             }
+            Inventory = buffer;
+            db.Update(this);
         }
     }
     public class HealthBlock {
@@ -154,6 +169,11 @@ namespace OracleBot.Classes
         public string Description {get;set;} = "";
         public string Macro {get;set;} = "";
     }
+    public class Spell{
+        public string Name {get;set;} = "Magic Missile";
+        public string Description {get;set;} = "It fires a missile made of magic";
+        public string Macro {get;set;} = "";
+    }
     public class Skill {
         public string Name {get;set;}
         public AbilityShort Ability {get;set;}
@@ -173,5 +193,6 @@ namespace OracleBot.Classes
     public enum AbilityScores {Strength = 0, Dexterity = 1, Constitution = 2, Intelligance = 3, Wisdom = 4}
     public enum AbilityShort {STR = 0, DEX = 1, CON = 2, INT = 3, WIS = 4}
     public enum Proficiency {Untrained = 0, Proficient = 1, Expert = 2}
+    public enum AttackType {Melee, Spell}
 
 }

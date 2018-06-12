@@ -552,5 +552,36 @@ namespace OracleBot.Modules
                 await Context.Message.DeleteAsync();
             }
         }
+        [Command("ToggleCodeBlocks"),Alias("ToggleCB")]
+        [Summary("Toggles your Locked character's sheet display mode between Regular and codeblock mode. Usage: `.ToggleCB`")]
+        public async Task ToggleCB(){
+            var players = Database.GetCollection<player>("Players");
+            var col = Database.GetCollection<Character>("Characters");
+            if (!players.Exists(x => x.DiscordId == Context.User.Id)){
+                await ReplyAndDeleteAsync(Context.User.Mention+", you've never made any character so I can't find your character! Please make one with `.newchar Name`!", timeout: TimeSpan.FromSeconds(5));                    return;
+            }
+            var plr = players
+                .Include(x => x.Character)
+                .Include(x => x.Character.AbilityScores) .Include(x => x.Character.Skills)
+                .FindOne(x => x.DiscordId == Context.User.Id);
+            if (plr.Character == null){
+                await ReplyAndDeleteAsync(Context.User.Mention+", you're not locked to a character! Use `.lock Character_Name` to lock into a character.",false,null,TimeSpan.FromSeconds(5));
+                return;
+            }
+            else{
+                var chr = plr.Character;
+                if (chr.CodeblockMode) {
+                    chr.CodeblockMode = false;
+                    
+                    await ReplyAsync(Context.User.Mention+", Disabled Code Block mode for "+chr.Name+"'s sheet.");
+                }
+                else {
+                    chr.CodeblockMode = true;
+                    await ReplyAsync(Context.User.Mention+", Enabled Code Block mode for "+chr.Name+"'s sheet.");
+                }
+                col.Update(chr);
+                await Context.Message.DeleteAsync();
+            }
+        }
     }
 }
