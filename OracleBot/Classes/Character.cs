@@ -27,7 +27,7 @@ namespace OracleBot.Classes
         public List<Ability> Abilities {get;set;} = new List<Ability>();
         public List<Spell> SpellBook {get;set;} = new List<Spell>();
         public List<PlayerItem> Inventory {get;set;} = new List<PlayerItem>();
-        public int Wallet {get;set;} = 0;
+        public double Money {get;set;} = 0;
         public bool CodeblockMode {get;set;} = false;
 
         public Embed GetSheet(){
@@ -62,7 +62,7 @@ namespace OracleBot.Classes
                 sb.Clear();
             }
 
-            if (Skills.Count == 0) eb.AddField("Skills","Use `.NewSkill Name Ability_Score Proficiency(y/n/e)` to add.",true);
+            if (Skills.Count == 0) eb.AddField("Skills","Use `.NewSkill Name Ability_Score Proficiency` to add.",true);
             else{
                 foreach(var x in Skills){
                     sb.AppendLine("• "+x.Name+"("+x.Ability+") "+"["+x.Proficiency+"]");
@@ -71,7 +71,7 @@ namespace OracleBot.Classes
                 else eb.AddField("Skills",sb.ToString(),true);
                 sb.Clear();
             }
-            sb.AppendLine("$"+Wallet.ToString());
+            sb.AppendLine("$"+Money.ToString());
             foreach (var x in Inventory){
                 sb.AppendLine("• "+x.Item.Name+" [x"+x.Quantity+"]");
             }
