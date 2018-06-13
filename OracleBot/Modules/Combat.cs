@@ -44,7 +44,8 @@ namespace OracleBot.Modules
                 else{
                     var ab = new Attack(){
                         Name = Name,
-                        Description = Description
+                        Description = Description,
+                        Type = Type
                     };
                     chr.Attacks.Add(ab);
                     await ReplyAsync(Context.User.Mention+", Added "+Type+" Attack **"+ab.Name+"** to "+chr.Name+".");
@@ -71,7 +72,7 @@ namespace OracleBot.Modules
             }
             else{
                 var chr = plr.Character;
-                if (!chr.Attacks.Exists(x => x.Name.ToLower() == Name.ToLower())){
+                if (!chr.Attacks.Exists(x => x.Name.ToLower().StartsWith(Name.ToLower()))){
                     await ReplyAndDeleteAsync(Context.User.Mention+", your character doesn't have any Attacks whose name starts with "+Name+".", timeout: TimeSpan.FromSeconds(5));
                     return;
                 }
@@ -111,7 +112,7 @@ namespace OracleBot.Modules
             }
             else{
                 var chr = plr.Character;
-                if (!chr.Attacks.Exists(x => x.Name.ToLower() == Name.ToLower())){
+                if (!chr.Attacks.Exists(x => x.Name.ToLower().StartsWith(Name.ToLower()))){
                     await ReplyAndDeleteAsync(Context.User.Mention+", your character doesn't have any Attacks whose name starts with "+Name+".", timeout: TimeSpan.FromSeconds(5));
                     return;
                 }

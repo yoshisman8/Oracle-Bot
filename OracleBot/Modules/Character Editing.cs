@@ -248,7 +248,7 @@ namespace OracleBot.Modules
             }
             else{
                 var chr = plr.Character;
-                if (!chr.Traits.Exists(x => x.Name.ToLower() == Name.ToLower())){
+                if (!chr.Traits.Exists(x => x.Name.ToLower().StartsWith(Name.ToLower()))){
                     await ReplyAndDeleteAsync(Context.User.Mention+", your character doesn't have any trait whose name starts with "+Name+".", timeout: TimeSpan.FromSeconds(5));
                     return;
                 }
@@ -325,7 +325,7 @@ namespace OracleBot.Modules
             }
             else{
                 var chr = plr.Character;
-                if (!chr.Abilities.Exists(x => x.Name.ToLower() == Name.ToLower())){
+                if (!chr.Abilities.Exists(x => x.Name.ToLower().StartsWith(Name.ToLower()))){
                     await ReplyAndDeleteAsync(Context.User.Mention+", your character doesn't have any trait whose name starts with "+Name+".", timeout: TimeSpan.FromSeconds(5));
                     return;
                 }
