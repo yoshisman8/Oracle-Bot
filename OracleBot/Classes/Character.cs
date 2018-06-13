@@ -25,7 +25,7 @@ namespace OracleBot.Classes
         public List<Ability> Traits {get;set;} = new List<Ability>();
         public List<Skill> Skills {get;set;} = new List<Skill>();
         public List<Ability> Abilities {get;set;} = new List<Ability>();
-        public List<Spell> SpellBook {get;set;} = new List<Spell>();
+        public List<Attack> Attacks {get;set;} = new List<Attack>();
         public List<PlayerItem> Inventory {get;set;} = new List<PlayerItem>();
         public double Money {get;set;} = 0;
         public bool CodeblockMode {get;set;} = false;
@@ -38,7 +38,7 @@ namespace OracleBot.Classes
                 "\n💗 CON | "+AbilityScores[2].GetValue()+" ["+ AbilityScores[2].GetMod()+"] "+AbilityScores[2].IsProficient()+
                 "\n🧠 INT | "+AbilityScores[3].GetValue()+" ["+ AbilityScores[3].GetMod()+"] "+AbilityScores[3].IsProficient()+
                 "\n🧙 WIS | "+AbilityScores[4].GetValue()+" ["+ AbilityScores[4].GetMod()+"] "+AbilityScores[4].IsProficient()+"```",true)
-                .AddField("Statistics", "```css\n🔰 Level: "+ Health.Level+"\n🛡 Armor Class: "+ArmorClass+"\n🔴 Health: ["+Health.Current+"/"+Health.GetHealth(AbilityScores[2].GetValue())+"]\n💮 Proficiency: "+Profiency+"\n✨ Spells Known: "+SpellBook.Count+"```",true)
+                .AddField("Statistics", "```css\n🔰 Level: "+ Health.Level+"\n🛡 Armor Class: "+ArmorClass+"\n🔴 Health: ["+Health.Current+"/"+Health.GetHealth(AbilityScores[2].GetValue())+"]\n💮 Proficiency: "+Profiency+"\n💫 Attacks: "+Attacks.Count+"```",true)
                 .WithThumbnailUrl(Image)
                 .WithColor(new Color(Color[0],Color[1],Color[2]));
             var sb = new StringBuilder();
@@ -169,10 +169,11 @@ namespace OracleBot.Classes
         public string Description {get;set;} = "";
         public string Macro {get;set;} = "";
     }
-    public class Spell{
-        public string Name {get;set;} = "Magic Missile";
-        public string Description {get;set;} = "It fires a missile made of magic";
+    public class Attack{
+        public string Name {get;set;} = "Unarmed Strike";
+        public string Description {get;set;} = "";
         public string Macro {get;set;} = "";
+        public AttackType Type {get;set;} = AttackType.Melee;
     }
     public class Skill {
         public string Name {get;set;}
