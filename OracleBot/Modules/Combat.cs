@@ -127,7 +127,9 @@ namespace OracleBot.Modules
                 }
                 else{
                     var trait = chr.Attacks.Find(x => x.Name.ToLower().StartsWith(Name.ToLower()));
-                    string title = ((trait.Type == AttackType.Melee) || (trait.Type == AttackType.Spell)) ? chr.Name+" used their technique: " : chr.Name+" casted " ;
+                    string title = "";
+                    if (trait.Type == AttackType.Melee) title = chr.Name+" used their special technique: ";
+                    else if (trait.Type == AttackType.Spell) title = chr.Name+" casted ";
                     var embed = new EmbedBuilder()
                         .WithTitle(title+trait.Name)
                         .WithDescription(trait.Description)
@@ -160,7 +162,7 @@ namespace OracleBot.Modules
                     var embed = new EmbedBuilder()
                         .WithTitle(chr.Name+"'s Attacks");
                     foreach(var x in chr.Attacks){
-                        string title = ((x.Type == AttackType.Melee) || (x.Type == AttackType.Spell)) ? "💥 " : "✨ ";
+                        string title = (x.Type == AttackType.Melee) ? "💥 " : "✨ ";
                         embed.AddField(title+x.Name,x.Description);
                     }
                     await ReplyAsync("",false,embed.Build());
@@ -187,7 +189,7 @@ namespace OracleBot.Modules
                     var embed = new EmbedBuilder()
                         .WithTitle(chr.Name+"'s Attacks");
                     foreach(var x in chr.Attacks){
-                        string title = ((x.Type == AttackType.Melee) || (x.Type == AttackType.Spell)) ? "💥 " : "✨ ";
+                        string title = (x.Type == AttackType.Melee) ? "💥 " : "✨ ";
                         embed.AddField(title+x.Name,x.Description);
                     }
                     await ReplyAsync("",false,embed.Build());
