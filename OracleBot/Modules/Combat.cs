@@ -199,7 +199,7 @@ namespace OracleBot.Modules
         }
         [Command("Hurt")]
         [Summary("Reduce your character's HP by an amount. Usage: `.Hurt Amount`. Note: GMs can hurt any PC by inputting the name of the character at the end.")]
-        public async Task Hurt(int amount, [Remainder] string Name){
+        public async Task Hurt(int amount, [Remainder] string Name = ""){
             amount = Math.Abs(amount);
             var players = Database.GetCollection<player>("Players");
             var col = Database.GetCollection<Character>("Characters");
@@ -253,7 +253,7 @@ namespace OracleBot.Modules
         }
         [Command("Heal")]
         [Summary("Heals your character's HP by an amount. Usage: `.Heal Amount`. Note: GMs can heal any PC by inputting the name of the character at the end.")]
-        public async Task Heal(int amount, [Remainder] string Name){
+        public async Task Heal(int amount, [Remainder] string Name = ""){
             amount = Math.Abs(amount);
             var players = Database.GetCollection<player>("Players");
             var col = Database.GetCollection<Character>("Characters");
@@ -307,7 +307,7 @@ namespace OracleBot.Modules
         }
         [Command("FullRestore"), Alias("FullHeal")]
         [Summary("Heals your character's HP completely. Usage: `.FullHeal`. Note: GMs can heal any PC by inputting the name of the character at the end.")]
-        public async Task FHeal([Remainder] string Name){
+        public async Task FHeal([Remainder] string Name = ""){
             var players = Database.GetCollection<player>("Players");
             var col = Database.GetCollection<Character>("Characters");
             var user = Context.User as SocketGuildUser;
