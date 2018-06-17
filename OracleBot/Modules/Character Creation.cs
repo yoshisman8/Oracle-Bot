@@ -47,7 +47,7 @@ namespace OracleBot.Modules
                 plr.Character = character;
                 players.Update(plr);
             }
-            await ReplyAsync(Context.User.Mention+", Character **"+character.Name+"** was created successfuly! Make sure to consult the help files on `.help basics` to complete its set up.");
+            await ReplyAsync(Context.User.Mention+", Character **"+character.Name+"** was created successfuly! Make sure to consult the help files on `.help` to see all the comands you can do complete the set-up.");
             await Context.Message.DeleteAsync();
         }
 

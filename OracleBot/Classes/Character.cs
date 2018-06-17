@@ -194,6 +194,6 @@ namespace OracleBot.Classes
     public enum AbilityScores {Strength = 0, Dexterity = 1, Constitution = 2, Intelligance = 3, Wisdom = 4}
     public enum AbilityShort {STR = 0, DEX = 1, CON = 2, INT = 3, WIS = 4}
     public enum Proficiency {Untrained = 0, Proficient = 1, Expert = 2}
-    public enum AttackType {Melee, Spell, Mixed}
+    public enum AttackType {Melee, Spell}
 
 }
