@@ -155,7 +155,10 @@ namespace OracleBot.Modules
                     var embed = new EmbedBuilder()
                         .WithTitle(chr.Name+"'s Traits");
                     foreach(var x in chr.Traits){
-                        embed.AddField(x.Name,x.Description);
+                        if (MacroProcessor.IsReference(x.Description)){
+                            embed.AddField(x.Name,MacroProcessor.MacroReference(x.Description,chr));
+                        }
+                        else embed.AddField(x.Name,x.Description);
                     }
                     await ReplyAsync("",false,embed.Build());
                     await Context.Message.DeleteAsync();
@@ -181,7 +184,10 @@ namespace OracleBot.Modules
                     var embed = new EmbedBuilder()
                         .WithTitle(chr.Name+"'s Traits");
                     foreach(var x in chr.Traits){
-                        embed.AddField(x.Name,x.Description);
+                        if (MacroProcessor.IsReference(x.Description)){
+                            embed.AddField(x.Name,MacroProcessor.MacroReference(x.Description,chr));
+                        }
+                        else embed.AddField(x.Name,x.Description);
                     }
                     await ReplyAsync("",false,embed.Build());
                     await Context.Message.DeleteAsync();
@@ -211,7 +217,10 @@ namespace OracleBot.Modules
                     var embed = new EmbedBuilder()
                         .WithTitle(chr.Name+"'s Abilities");
                     foreach(var x in chr.Abilities){
-                        embed.AddField(x.Name,x.Description);
+                        if (MacroProcessor.IsReference(x.Description)){
+                            embed.AddField(x.Name,MacroProcessor.MacroReference(x.Description,chr));
+                        }
+                        else embed.AddField(x.Name,x.Description);
                     }
                     await ReplyAsync("",false,embed.Build());
                     await Context.Message.DeleteAsync();
@@ -237,7 +246,10 @@ namespace OracleBot.Modules
                     var embed = new EmbedBuilder()
                         .WithTitle(chr.Name+"'s Abilities");
                     foreach(var x in chr.Abilities){
-                        embed.AddField(x.Name,x.Description);
+                        if (MacroProcessor.IsReference(x.Description)){
+                            embed.AddField(x.Name,MacroProcessor.MacroReference(x.Description,chr));
+                        }
+                        else embed.AddField(x.Name,x.Description);
                     }
                     await ReplyAsync("",false,embed.Build());
                     await Context.Message.DeleteAsync();

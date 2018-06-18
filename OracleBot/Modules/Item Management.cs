@@ -9,6 +9,8 @@ using Discord.WebSocket;
 using Discord.Commands;
 using Discord.Addons.Interactive;
 using OracleBot.Classes;
+using OracleBot.Modules;
+using DiceNotation;
 
 namespace OracleBot.Modules
 {
@@ -374,9 +376,17 @@ namespace OracleBot.Modules
                         chr.Inventory[index].Quantity -= Amount;
                         if (chr.Inventory[index].Quantity == 0){
                             chr.Inventory.RemoveAll(x => x.Item == item.Item);
-                            await ReplyAsync(Context.User.Mention+", "+chr.Name+" used up the remaining "+ Amount +" of their **"+item.Item.Name+"**.");
+                            string msg1 = Context.User.Mention+", "+chr.Name+" used up the remaining "+ Amount +" of their **"+item.Item.Name+"**.";
+                            if (item.Item.Macro != ""){
+                                msg1 += "\nRoll: **"+MacroProcessor.MacroRoll(item.Item.Macro,chr).Roll().Value;
+                            }
+                            await ReplyAsync(msg1);
                         }
-                        else await ReplyAsync(Context.User.Mention+", "+chr.Name+" used up "+ Amount +" of their **"+item.Item.Name+"**.");
+                        string msg = Context.User.Mention+", "+chr.Name+" used up "+ Amount +" of their **"+item.Item.Name+"**.";
+                        if (item.Item.Macro != ""){
+                                msg += "\nRoll: **"+MacroProcessor.MacroRoll(item.Item.Macro,chr).Roll().Value;
+                            }
+                        else await ReplyAsync(msg);
                     }
                     col.Update(chr);
                 }
@@ -489,7 +499,13 @@ namespace OracleBot.Modules
                     .WithDescription("Money: $"+chr.Money);
                 var sb = new StringBuilder();
                 foreach (var x in chr.Inventory){
-                   embed.AddField(x.Item.Name + " x"+x.Quantity,x.Item.Description);     
+                    if (MacroProcessor.IsReference(x.Item.Description)){
+                        string desc = MacroProcessor.MacroReference(x.Item.Description,chr);
+                        embed.AddField(x.Item.Name + " x"+x.Quantity,desc);
+                    }
+                    else {
+                        embed.AddField(x.Item.Name + " x"+x.Quantity,x.Item.Description);
+                    }
                 }
                 await ReplyAsync("",false,embed.Build());
                 await Context.Message.DeleteAsync();

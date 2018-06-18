@@ -9,6 +9,7 @@ using Discord.WebSocket;
 using Discord.Commands;
 using Discord.Addons.Interactive;
 using OracleBot.Classes;
+using DiceNotation;
 
 namespace OracleBot.Modules
 {
@@ -134,6 +135,10 @@ namespace OracleBot.Modules
                         .WithTitle(title+trait.Name)
                         .WithDescription(trait.Description)
                         .WithColor(chr.Color[0],chr.Color[1],chr.Color[2]);
+                    if (MacroProcessor.IsReference(trait.Description)){ embed.Description = MacroProcessor.MacroReference(trait.Description,chr);}
+                    if (trait.Macro != ""){
+                        embed.AddField("Roll",MacroProcessor.MacroRoll(trait.Macro,chr).Roll().ToString());
+                    }
                     await ReplyAsync("",false,embed.Build());
                 }
                 await Context.Message.DeleteAsync();
@@ -163,7 +168,10 @@ namespace OracleBot.Modules
                         .WithTitle(chr.Name+"'s Attacks");
                     foreach(var x in chr.Attacks){
                         string title = (x.Type == AttackType.Melee) ? "💥 " : "✨ ";
-                        embed.AddField(title+x.Name,x.Description);
+                        if (MacroProcessor.IsReference(x.Description)){
+                            embed.AddField(title+x.Name,MacroProcessor.MacroReference(x.Description,chr));
+                        }
+                        else embed.AddField(title+x.Name,x.Description);
                     }
                     await ReplyAsync("",false,embed.Build());
                     await Context.Message.DeleteAsync();
@@ -190,7 +198,10 @@ namespace OracleBot.Modules
                         .WithTitle(chr.Name+"'s Attacks");
                     foreach(var x in chr.Attacks){
                         string title = (x.Type == AttackType.Melee) ? "💥 " : "✨ ";
-                        embed.AddField(title+x.Name,x.Description);
+                        if (MacroProcessor.IsReference(x.Description)){
+                            embed.AddField(title+x.Name,MacroProcessor.MacroReference(x.Description,chr));
+                        }
+                        else embed.AddField(title+x.Name,x.Description);
                     }
                     await ReplyAsync("",false,embed.Build());
                     await Context.Message.DeleteAsync();
