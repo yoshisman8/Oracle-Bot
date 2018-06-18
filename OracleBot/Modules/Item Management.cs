@@ -346,6 +346,7 @@ namespace OracleBot.Modules
                 return;
             }
             var chr = plr.Character;
+            chr.BuildInventory(Database,plr);
             var Query = chr.Inventory.Where(x=>x.Item.Name.ToLower().StartsWith(Name.ToLower()));
             if (Query.Count() > 1 && !Query.ToList().Exists(x =>x.Item.Name.ToLower() == Name.ToLower())){
                 string msg = Context.User.Mention+", Multiple items were found! Please specify which one of the following items is the one you're looking for: ";
@@ -363,7 +364,12 @@ namespace OracleBot.Modules
             else if (Query.Count() == 1 || Query.ToList().Exists(x=>x.Item.Name.ToLower() == Name.ToLower())){
                     var item = Query.First();
                     if(Amount == 0) {
-                        await ReplyAsync(Context.User.Mention+", "+chr.Name+" used their **"+item.Item.Name+"**.");
+                        var msg2 = Context.User.Mention+", "+chr.Name+" used their **"+item.Item.Name+"**.";
+                        if (item.Item.Macro != ""){
+                                msg2 += "\nRoll: **"+MacroProcessor.MacroRoll(item.Item.Macro,chr).Roll().Value+"**.";
+                            }
+                        await ReplyAsync(msg2);
+                        await Context.Message.DeleteAsync();
                         return;
                     }
 
@@ -378,13 +384,13 @@ namespace OracleBot.Modules
                             chr.Inventory.RemoveAll(x => x.Item == item.Item);
                             string msg1 = Context.User.Mention+", "+chr.Name+" used up the remaining "+ Amount +" of their **"+item.Item.Name+"**.";
                             if (item.Item.Macro != ""){
-                                msg1 += "\nRoll: **"+MacroProcessor.MacroRoll(item.Item.Macro,chr).Roll().Value;
+                                msg1 += "\nRoll: **"+MacroProcessor.MacroRoll(item.Item.Macro,chr).Roll().Value+"**.";
                             }
                             await ReplyAsync(msg1);
                         }
                         string msg = Context.User.Mention+", "+chr.Name+" used up "+ Amount +" of their **"+item.Item.Name+"**.";
                         if (item.Item.Macro != ""){
-                                msg += "\nRoll: **"+MacroProcessor.MacroRoll(item.Item.Macro,chr).Roll().Value;
+                                msg += "\nRoll: **"+MacroProcessor.MacroRoll(item.Item.Macro,chr).Roll().Value+"**.";
                             }
                         else await ReplyAsync(msg);
                     }

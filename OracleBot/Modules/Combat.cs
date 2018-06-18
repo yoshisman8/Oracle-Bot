@@ -137,7 +137,7 @@ namespace OracleBot.Modules
                         .WithColor(chr.Color[0],chr.Color[1],chr.Color[2]);
                     if (MacroProcessor.IsReference(trait.Description)){ embed.Description = MacroProcessor.MacroReference(trait.Description,chr);}
                     if (trait.Macro != ""){
-                        embed.AddField("Roll",MacroProcessor.MacroRoll(trait.Macro,chr).Roll().ToString());
+                        embed.AddField("Roll",MacroProcessor.MacroRoll(trait.Macro,chr).Roll().Value.ToString());
                     }
                     await ReplyAsync("",false,embed.Build());
                 }

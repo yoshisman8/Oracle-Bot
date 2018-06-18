@@ -12,6 +12,7 @@ using Discord.Addons.Interactive;
 using OracleBot.Classes;
 using DiceNotation;
 using SimpleExpressionEvaluator;
+using static OracleBot.Modules.Item_Management;
 
 namespace OracleBot.Modules
 {
@@ -42,8 +43,121 @@ namespace OracleBot.Modules
             }
         }
         [Command("AttackMacro"), Alias("SetAttackMacro")]
-        [Summary("Sets the macro for one of your character's Attacks. usage: `.AttackMacro Name Macro`. If you want to remove the macro from the attack, just use the command without any macro (ie: `.AttackMacro Punch`) to rest it."]
-        
+        [Summary("Sets the macro for one of your character's Attacks. usage: `.AttackMacro Name Macro`. If you want to remove the macro from the attack, just use the command without any macro (ie: `.AttackMacro Punch`) to rest it.")]
+        public async Task MeleeAttack(string Name, [Remainder] string Macro = ""){
+            var players = Database.GetCollection<player>("Players");
+            var col = Database.GetCollection<Character>("Characters");
+            if (!players.Exists(x => x.DiscordId == Context.User.Id)){
+                await ReplyAndDeleteAsync(Context.User.Mention+", you've never made any character so I can't find your character! Please make one with `.newchar Name`!", timeout: TimeSpan.FromSeconds(5));                    return;
+            }
+            var plr = players
+                .Include(x => x.Character)
+                .Include(x => x.Character.AbilityScores) .Include(x => x.Character.Skills)
+                .FindOne(x => x.DiscordId == Context.User.Id);
+            if (plr.Character == null){
+                await ReplyAndDeleteAsync(Context.User.Mention+", you're not locked to a character! Use `.lock Character_Name` to lock into a character.",false,null,TimeSpan.FromSeconds(5));
+                return;
+            }
+            else{
+                var chr = plr.Character;
+                if (!chr.Attacks.Exists(x => x.Name.ToLower().StartsWith(Name.ToLower()))){
+                    await ReplyAndDeleteAsync(Context.User.Mention+", your character doesn't have any Attacks whose name starts with "+Name+".", timeout: TimeSpan.FromSeconds(5));
+                    return;
+                }
+                if (chr.Attacks.Where(x => x.Name.ToLower().StartsWith(Name.ToLower())).Count() > 1 && !chr.Attacks.Exists(x => x.Name.ToLower() == Name.ToLower())){
+                    var result = chr.Attacks.Where(x => x.Name.ToLower().StartsWith(Name.ToLower()));
+                    var sb = new StringBuilder().Append(Context.User.Mention+", "+chr.Name+" has more than " + result.Count()+ " Attacks that starts with the word **"+Name+"**. Please specify which one from this list is the one you want to remove by using said Trait's full name: ");
+                    foreach (var x in result){
+                        sb.Append("`"+x.Name+"`, ");
+                    }
+                    await ReplyAndDeleteAsync(sb.ToString().Substring(0,sb.Length-2), timeout: TimeSpan.FromSeconds(10));
+                    return;
+                }
+                else{
+                    var attack = chr.Attacks.Find(x => x.Name.ToLower().StartsWith(Name.ToLower()));
+                    int index = chr.Attacks.IndexOf(attack);
+                    attack.Macro = Macro;
+                    chr.Attacks[index] = attack;
+                    col.Update(chr);
+                    await ReplyAsync(Context.User.Mention+", the attack **"+attack.Name+"** now has its own macro!");
+                }
+                await Context.Message.DeleteAsync();
+            }
+        }
+        [Command("ItemMacro")]
+        [Summary("Sets the macro for one of your character's Attacks. usage: `.AttackMacro Name ItemLocation Macro`. Item Location is either 'Vault' or 'Global'. Only DMs can change global items. If you want to remove the macro from the attack, just use the command without any macro (ie: `.ItemMacro Potion Vault`) to rest it.")]
+        public async Task DelItem(string Name, ItemLocation Global, [Remainder] string Macro = ""){
+            var players = Database.GetCollection<player>("Players");
+            var ItemDb = Database.GetCollection<Item>("Items");
+            var User = Context.User as SocketGuildUser;
+            ItemDb.EnsureIndex("Name","LOWER($.Name)");
+
+            if(!players.Exists(x => x.DiscordId == Context.User.Id)){
+                players.Insert(new player(){
+                    DiscordId = Context.User.Id,
+                    Character = null
+                });
+            }
+            var plr = players
+                .Include(x => x.Character)
+                .Include(x => x.ItemVault)
+                .Include(x => x.Character.AbilityScores) .Include(x => x.Character.Skills)
+                .FindOne(x => x.DiscordId == Context.User.Id);
+            if (Global == ItemLocation.Global && !User.GuildPermissions.ManageMessages){
+                await ReplyAndDeleteAsync(User.Mention+", You can't set macros on items from global database! Only GMs can do that.",timeout: TimeSpan.FromSeconds(5));
+                return;
+            }
+            if (Global == ItemLocation.Vault){
+                var Query = plr.ItemVault.Where(x => x.Name.ToLower().StartsWith(Name));
+                if (Query.Count() == 0){
+                    await ReplyAndDeleteAsync(Context.User.Mention+", There isn't an item in your vault whose name starts with '"+Name+"'.",timeout: TimeSpan.FromSeconds(5));
+                    return;
+                }
+                else if (Query.Count() > 1 && !Query.ToList().Exists(x => x.Name.ToLower() == Name.ToLower())){
+                string msg = Context.User.Mention+", Multiple items were found! Please specify which one of the following items is the one you're looking for: ";
+                foreach (var q in Query)
+                {
+                    msg += "`" + q.Name + "`, ";
+                }
+                await ReplyAndDeleteAsync(msg.Substring(0,msg.Length-2), timeout: TimeSpan.FromSeconds(10));
+                return;
+                }
+                else if (Query.Count() == 1 || Query.ToList().Exists(x=>x.Name.ToLower() == Name.ToLower())){
+                    var item = Query.First();
+                    var index = plr.ItemVault.IndexOf(item);
+                    plr.ItemVault[index].Macro = Macro;
+                    players.Update(plr);
+                    await ReplyAsync(User.Mention+", the item **"+item.Name+"** from your Item Vault now has an assigned macro.");
+                    await Context.Message.DeleteAsync();
+                    return;
+                }
+            }
+            else if (Global == ItemLocation.Global){
+                var Query = ItemDb.Find(x => x.Name.ToLower().StartsWith(Name));
+                if (Query.Count() == 0){
+                    await ReplyAndDeleteAsync(Context.User.Mention+", There isn't an item in the database whose name starts with '"+Name+"'.",timeout: TimeSpan.FromSeconds(5));
+                    return;
+                }
+                else if (Query.Count() > 1 && !Query.ToList().Exists(x => x.Name.ToLower() == Name.ToLower())){
+                string msg = Context.User.Mention+", Multiple items were found! Please specify which one of the following items is the one you're looking for: ";
+                foreach (var q in Query)
+                {
+                    msg += "`" + q.Name + "`, ";
+                }
+                await ReplyAndDeleteAsync(msg.Substring(0,msg.Length-2), timeout: TimeSpan.FromSeconds(10));
+                return;
+                }
+                else if (Query.Count() == 1 || Query.ToList().Exists(x=>x.Name.ToLower() == Name.ToLower())){
+                    var item = Query.First();
+                    item.Macro = Macro;
+                    ItemDb.Update(item);
+                    await ReplyAsync(User.Mention+", the item **"+item.Name+"** from the item Database now has an assigned macro.");
+                    await Context.Message.DeleteAsync();
+                    return;
+                }
+            }
+            await ReplyAndDeleteAsync(User.Mention+", I couldn't find an item whose name is **"+Name+"**. (It has to be the full name!)",timeout: TimeSpan.FromSeconds(5));
+        }
     }
 
     public static class MacroProcessor{
@@ -116,11 +230,13 @@ namespace OracleBot.Modules
         }
         public static string MacroReference(string raw,Character Character){
             raw = raw.ToLower();
-            var Matches = Regex.Matches(raw,@"\[(.*?)\]");
-            var Reference = Matches[0].Groups[2].Value;
+            var Matches = Regex.Matches(raw,@"\{(.*?)\}");
             var Eva = new ExpressionEvaluator();
-            string pref = ParseReference(Matches[0].Groups[3].Value,Character);
-            raw = raw.Replace(Reference,Eva.Evaluate(pref).ToString());
+            foreach (Match x in Matches){
+                var Reference = x.Value;
+                string pref = ParseReference(x.Groups[1].Value,Character);
+                raw = raw.Replace(Reference,Eva.Evaluate(pref).ToString());
+            }        
             return raw;
         }
         public static bool IsMacro(string raw){
@@ -128,7 +244,7 @@ namespace OracleBot.Modules
             else return false;
         }
         public static bool IsReference(string raw){
-            return Regex.IsMatch(raw,@"\[(.*?)\]");
+            return Regex.IsMatch(raw,@"\{(.*?)\}");
         }
     }
 }
