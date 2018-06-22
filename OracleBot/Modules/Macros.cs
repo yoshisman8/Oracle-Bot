@@ -165,10 +165,11 @@ namespace OracleBot.Modules
             var regex = new Regex(@"\[(.*?)\]");
             string returnstring = Reference;
             var Matches = regex.Matches(Reference).Cast<Match>().Select(match => match.Value).ToList();
+            string buffer = "";
             foreach (var x in Matches){
-                switch (x){
+                switch (x){      
                     case "[str]":
-                        returnstring = returnstring.Replace(x,Character.AbilityScores[0].GetValue(true));
+                        returnstring =returnstring.Replace(x,Character.AbilityScores[0].GetValue(true));
                         break;
                     case "[dex]":
                         returnstring =returnstring.Replace(x,Character.AbilityScores[1].GetValue(true));
@@ -186,19 +187,29 @@ namespace OracleBot.Modules
                         returnstring= returnstring.Replace(x,Character.Profiency.ToString());
                         break;
                     case "[str-mod]":
-                        returnstring = returnstring.Replace(x,Character.AbilityScores[0].GetMod(true));
+                        buffer = Character.AbilityScores[0].GetMod(true);
+                        if (int.Parse(buffer) < 0) buffer = "("+buffer+")";
+                        returnstring = returnstring.Replace(x,buffer);
                         break;
                     case "[dex-mod]":
-                        returnstring= returnstring.Replace(x,Character.AbilityScores[1].GetMod(true));
+                        buffer = Character.AbilityScores[1].GetMod(true);
+                        if (int.Parse(buffer) < 0) buffer = "("+buffer+")";
+                        returnstring = returnstring.Replace(x,buffer);
                         break;
                     case "[con-mod]":
-                        returnstring = returnstring.Replace(x,Character.AbilityScores[2].GetMod(true));
+                        buffer = Character.AbilityScores[2].GetMod(true);
+                        if (int.Parse(buffer) < 0) buffer = "("+buffer+")";
+                        returnstring = returnstring.Replace(x,buffer);
                         break;
                     case "[int-mod]":
-                        returnstring = returnstring.Replace(x,Character.AbilityScores[3].GetMod(true));
+                        buffer = Character.AbilityScores[3].GetMod(true);
+                        if (int.Parse(buffer) < 0) buffer = "("+buffer+")";
+                        returnstring = returnstring.Replace(x,buffer);
                         break;
                     case "[wis-mod]":
-                        returnstring = returnstring.Replace(x,Character.AbilityScores[4].GetMod(true));
+                        buffer = Character.AbilityScores[4].GetMod(true);
+                        if (int.Parse(buffer) < 0) buffer = "("+buffer+")";
+                        returnstring = returnstring.Replace(x,buffer);
                         break;
                     case "[level]":
                         returnstring = returnstring.Replace(x,Character.Health.Level.ToString());
