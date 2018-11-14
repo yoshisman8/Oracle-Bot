@@ -16,7 +16,7 @@ namespace OracleBot.Modules
     {
         public LiteDatabase Database {get;set;}
         [Command("SetScore")]
-        [Summary("Set your locked character's ability score. Usage: `.SetScore AbScore Value Proficiency` valid Scores are `STR/DEX/CON/INT/WIS` and Proficiencies are `Untrained/Proficient/Expert`. All case sensitive.")]
+        [Summary("Set your locked character's ability score. Usage: `.SetScore AbScore Value Proficiency` valid Scores are `STR/DEX/CON/INT/WIS` and Proficiencies are `Untrained/Trained/Expert`. All case sensitive.")]
         public async Task SetAbScore(AbilityShort Score, int Value, Proficiency Prof = Proficiency.Untrained){
             Value = Math.Abs(Value);
             if (Value > 30){
@@ -39,7 +39,7 @@ namespace OracleBot.Modules
             else{
                 var chr = plr.Character;
                 chr.AbilityScores[(int)Score].Value = Value;
-                chr.AbilityScores[(int)Score].Proficient = Prof;
+                chr.AbilityScores[(int)Score].Trained = Prof;
                 if (Score == AbilityShort.CON) chr.Fullheal();
                 col.Update(chr);
                 await ReplyAsync(Context.User.Mention+", You set **"+chr.Name+"**'s "+Score+" to "+Value+" ["+Prof+"]");
@@ -48,7 +48,7 @@ namespace OracleBot.Modules
         }
         [Command("SetEScore")]
         [Summary("Set your locked character's extra ability score bonus. Usage: `.SetEScore AbScore Value Proficiency`.\n"+
-            "Valid Scores are `STR/DEX/CON/INT/WIS` and Proficiencies are `Untrained/Proficient/Expert`. All case sensitive.")]        
+            "Valid Scores are `STR/DEX/CON/INT/WIS` and Proficiencies are `Untrained/Trained/Expert`. All case sensitive.")]        
         public async Task SetEAbScore(AbilityShort Score, int Value, Proficiency Prof = Proficiency.Untrained){
             Value = Math.Abs(Value);
             if (Value > 30){
@@ -71,7 +71,7 @@ namespace OracleBot.Modules
             else{
                 var chr = plr.Character;
                 chr.AbilityScores[(int)Score].Extra = Value;
-                chr.AbilityScores[(int)Score].Proficient = Prof;
+                chr.AbilityScores[(int)Score].Trained = Prof;
                 if (Score == AbilityShort.CON) chr.Fullheal();
                 col.Update(chr);
                 await ReplyAsync(Context.User.Mention+", You set **"+chr.Name+"**'s bonus "+Score+" value to "+Value+" ["+Prof+"]");
@@ -116,8 +116,8 @@ namespace OracleBot.Modules
 
         [Command("NewSkill"), Alias("AddSkill")]
         [Summary("Adds or Updates a skill to your locked character. Usage: `.NewSkill Name AbilityScore Proficiency`\n"+
-            "Valid Scores are `STR/DEX/CON/INT/WIS` and Proficiencies are `Untrained/Proficient/Expert`. All case sensitive.")]
-        public async Task NewSkill(string Name, AbilityShort Score, Proficiency Prof = Proficiency.Proficient){
+            "Valid Scores are `STR/DEX/CON/INT/WIS` and Proficiencies are `Untrained/Trained/Expert`. All case sensitive.")]
+        public async Task NewSkill(string Name, AbilityShort Score, Proficiency Prof = Proficiency.Trained){
             var players = Database.GetCollection<player>("Players");
             var col = Database.GetCollection<Character>("Characters");
             if (!players.Exists(x => x.DiscordId == Context.User.Id)){

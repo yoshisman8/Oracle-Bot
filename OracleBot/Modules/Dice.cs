@@ -192,7 +192,7 @@ namespace OracleBot.Modules
             else{
                 var chr = plr.Character;
                 string Mod = chr.AbilityScores[(int)Score].GetMod(true);
-                string Prof = ((int)chr.AbilityScores[(int)Score].Proficient*chr.Profiency).ToString();
+                string Prof = ((int)chr.AbilityScores[(int)Score].Trained*chr.Profiency).ToString();
                 var result = parser.Parse("1d20 + "+ Mod +" + "+Prof).Roll();
                 await ReplyAsync(Context.User.Mention+", "+chr.Name+" Rolled a **"+result.Value+"** ("+result.Results[0].Value+"+"+Mod+"+"+Prof+") on their "+Score+" Saving Throw.");
                 await Context.Message.DeleteAsync();

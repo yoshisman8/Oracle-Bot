@@ -20,8 +20,6 @@ namespace OracleBot.Classes
         public string Class {get;set;} = "Classless";
         public string Race {get;set;} = "Generic";
         public AbScore[] AbilityScores {get;set;} = new AbScore[5]; //STR, DEX, CON, INT, WIS
-        public int ArmorClass {get;set;} = 10;
-        public int Profiency {get;set;} = 2;
         public List<Ability> Traits {get;set;} = new List<Ability>();
         public List<Skill> Skills {get;set;} = new List<Skill>();
         public List<Ability> Abilities {get;set;} = new List<Ability>();
@@ -33,12 +31,13 @@ namespace OracleBot.Classes
         public Embed GetSheet(){
             var eb = new EmbedBuilder()
                 .WithTitle(Name + " the "+ Race + " " + Class)
-                .AddField("Ability Scores", "```ini\n⚔️ STR | "+AbilityScores[0].GetValue()+" ["+ AbilityScores[0].GetMod()+"] "+AbilityScores[0].IsProficient()+
-                "\n🗡️ DEX | "+AbilityScores[1].GetValue()+" ["+ AbilityScores[1].GetMod()+"] "+AbilityScores[1].IsProficient()+
-                "\n💗 CON | "+AbilityScores[2].GetValue()+" ["+ AbilityScores[2].GetMod()+"] "+AbilityScores[2].IsProficient()+
-                "\n🧠 INT | "+AbilityScores[3].GetValue()+" ["+ AbilityScores[3].GetMod()+"] "+AbilityScores[3].IsProficient()+
-                "\n🧙 WIS | "+AbilityScores[4].GetValue()+" ["+ AbilityScores[4].GetMod()+"] "+AbilityScores[4].IsProficient()+"```",true)
-                .AddField("Statistics", "```css\n🔰 Level: "+ Health.Level+"\n🛡 Armor Class: "+ArmorClass+"\n🔴 Health: ["+Health.Current+"/"+Health.GetHealth(AbilityScores[2].GetValue())+"]\n💮 Proficiency: "+Profiency+"\n💫 Attacks: "+Attacks.Count+"```",true)
+                .AddField("Ability Scores", "```ini\n⚔️ STR | "+AbilityScores[0].GetValue()+" ["+ AbilityScores[0].GetMod()+"] "+AbilityScores[0].IsTrained()+
+                "\n🗡️ DEX | "+AbilityScores[1].GetValue()+" ["+ AbilityScores[1].GetMod()+"] "+AbilityScores[1].IsTrained()+
+                "\n💗 CON | "+AbilityScores[2].GetValue()+" ["+ AbilityScores[2].GetMod()+"] "+AbilityScores[2].IsTrained()+
+                "\n🧠 INT | "+AbilityScores[3].GetValue()+" ["+ AbilityScores[3].GetMod()+"] "+AbilityScores[3].IsTrained()+
+                "\n🧙 WIS | "+AbilityScores[4].GetValue()+" ["+ AbilityScores[4].GetMod()+"] "+AbilityScores[4].IsTrained()+
+                "\n🧙 CHA | "+AbilityScores[5].GetValue()+" ["+ AbilityScores[4].GetMod()+"] "+AbilityScores[4].IsTrained()+"```",true)
+                .AddField("Statistics", "```css\n🔰 Level: "+ Health.Level+"\n🛡 Armor Class: "+10+ParseArmor()+"\n🔴 Health: ["+Health.Current+"/"+Health.GetHealth()+"]\n💮 Skill Ranks: "+CountRanks()+"\n💫 Attacks: "+Attacks.Count+"```",true)
                 .WithThumbnailUrl(Image)
                 .WithColor(new Color(Color[0],Color[1],Color[2]));
             var sb = new StringBuilder();
@@ -114,11 +113,17 @@ namespace OracleBot.Classes
             Inventory = buffer;
             db.Update(this);
         }
+        public int ParseArmor(){
+            foreach (var x in Inventory){
+                
+            }
+        }
     }
     public class HealthBlock {
         public int Level {get;set;} = 1;
         public int Extra {get;set;} = 0;
         public int Current {get;set;} = 5;
+        public int Base {get;set;} = 6;
 
         [BsonIgnore]
         public Dictionary<int,int> values = new Dictionary<int, int>(){
@@ -135,16 +140,16 @@ namespace OracleBot.Classes
     public class AbScore{
         public int Value {get;set;} = 10;
         public int Extra {get;set;} = 0;
-        public Proficiency Proficient {get;set;} = Proficiency.Untrained;
+        public Proficiency Trained {get;set;} = Proficiency.Untrained; //Removed
         public string GetValue(bool Int = false){
             if (Int){
                 return (Value+Extra).ToString();
             }
             return String.Format("{0:00}",(Value + Extra));
         }
-        public string IsProficient(){
-            if (Proficient == Proficiency.Proficient) return "⭐";
-            if (Proficient == Proficiency.Expert) return "🌟";
+        public string IsTrained(){
+            if (Trained == Proficiency.Trained) return "⭐";
+            if (Trained == Proficiency.Expert) return "🌟";
             else return "";
         }
         public string GetMod(bool Int = false){
@@ -177,6 +182,7 @@ namespace OracleBot.Classes
     }
     public class Skill {
         public string Name {get;set;}
+        public int Ranks {get;set;} = 0;
         public AbilityShort Ability {get;set;}
         public Proficiency Proficiency {get;set;} = Proficiency.Untrained;
     }
@@ -186,14 +192,15 @@ namespace OracleBot.Classes
         public string Name {get;set;} = "";
         public string Description {get;set;} = "";
         public string Macro {get;set;} = "";
+        public ItemType Type {get;set;} = ItemType.Miscellanous;
     }
     public class PlayerItem{
         public Item Item {get;set;}
         public int Quantity {get;set;} = 1;
     }
-    public enum AbilityScores {Strength = 0, Dexterity = 1, Constitution = 2, Intelligance = 3, Wisdom = 4}
-    public enum AbilityShort {STR = 0, DEX = 1, CON = 2, INT = 3, WIS = 4}
-    public enum Proficiency {Untrained = 0, Proficient = 1, Expert = 2}
+    public enum AbilityScores {Strength = 0, Dexterity = 1, Constitution = 2, Intelligance = 3, Wisdom = 4, Charisma = 5}
+    public enum AbilityShort {STR = 0, DEX = 1, CON = 2, INT = 3, WIS = 4, CHA = 5}
+    public enum Proficiency {Untrained = 0, Trained = 1, Expert = 2}
     public enum AttackType {Melee, Spell}
-
+    public enum ItemType {Armor, Weapon, Extra, Miscellanous}
 }
