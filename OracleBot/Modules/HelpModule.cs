@@ -1,23 +1,26 @@
 ﻿using Discord;
 using Discord.Commands;
+using Discord.Addons.Interactive;
 using Microsoft.Extensions.Configuration;
+using LiteDB;
+using OracleBot.Classes;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace OracleBot.Modules
 {
-    public class HelpModule : ModuleBase<SocketCommandContext>
+    public class HelpModule : InteractiveBase<SocketCommandContext>
     {
         private readonly CommandService _service;
         private readonly IConfigurationRoot _config;
-
+        private readonly LiteDatabase database;
         public HelpModule(CommandService service, IConfigurationRoot config)
         {
             _service = service;
             _config = config;
         }
 
-        [Command("help")]
+        [Command("Commands")]
         public async Task HelpAsync()
         {
             string prefix = _config["prefix"];
@@ -52,7 +55,7 @@ namespace OracleBot.Modules
             await Context.Message.DeleteAsync();
         }
 
-        [Command("help")]
+        [Command("Commands"), Alias("Command")]
         public async Task HelpAsync(string command)
         {
             var result = _service.Search(Context, command);
@@ -86,6 +89,18 @@ namespace OracleBot.Modules
 
             await ReplyAsync("", false, builder.Build());
             await Context.Message.DeleteAsync();
+        }
+        [Command("Help", RunMode = RunMode.Async)]
+        public async Task Help(){
+            
+        }
+    }
+
+    public class HelpMenu{
+
+        public Embed MainMenu(){
+            return new EmbedBuilder()
+                .WithTitle("Help Menu: Main menu");
         }
     }
 }
