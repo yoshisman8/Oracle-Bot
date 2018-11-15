@@ -115,9 +115,9 @@ namespace OracleBot.Modules
         }
 
         [Command("NewSkill"), Alias("AddSkill")]
-        [Summary("Adds or Updates a skill to your locked character. Usage: `.NewSkill Name AbilityScore Proficiency`\n"+
-            "Valid Scores are `STR/DEX/CON/INT/WIS` and Proficiencies are `Untrained/Trained/Expert`. All case sensitive.")]
-        public async Task NewSkill(string Name, AbilityShort Score, Proficiency Prof = Proficiency.Trained){
+        [Summary("Adds or Updates a skill to your locked character. Usage: `.NewSkill Name AbilityScore Ranks`\n"+
+            "Valid Scores are `STR/DEX/CON/INT/WIS/CHA`.")]
+        public async Task NewSkill(string Name, AbilityShort Score, int Ranks = 0){
             var players = Database.GetCollection<player>("Players");
             var col = Database.GetCollection<Character>("Characters");
             if (!players.Exists(x => x.DiscordId == Context.User.Id)){
@@ -137,18 +137,17 @@ namespace OracleBot.Modules
                     var index = chr.Skills.FindIndex(x => x.Name.ToLower() == Name.ToLower());
                     var skill = chr.Skills.ElementAt(index);
                     skill.Ability = Score;
-                    skill.Proficiency = Prof;
                     chr.Skills[index] = skill;
-                    await ReplyAsync(Context.User.Mention+", you updated your character's **"+skill.Name+"** skill to use **"+Score+"** and be **"+Prof+"**.");
+                    await ReplyAsync(Context.User.Mention+", you updated your character's **"+skill.Name+"** skill to use **"+Score+"**.");
                 }
                 else{
                     var skill = new Skill(){
                         Name = Name,
                         Ability = Score,
-                        Proficiency = Prof
+                        Ranks = Ranks
                     };
                     chr.Skills.Add(skill);
-                    await ReplyAsync(Context.User.Mention+", you added the following skill to your character: **"+skill.Name+"** that uses **"+Score+"** and they're **"+Prof+"**.");
+                    await ReplyAsync(Context.User.Mention+", you added the following skill to your character: **"+skill.Name+"** that uses **"+Score+"** and they have **"+Ranks+"** ranks on said skill.");
                 }
                 col.Update(chr);
                 await Context.Message.DeleteAsync();
@@ -193,7 +192,96 @@ namespace OracleBot.Modules
                 }
             }
         }
-        [Command("NewTrait"), Alias("AddTrait")]
+        [Command("RankUp"),Alias("RU")]
+        [Summary("Adds ranks to a skill you know. Usage: `.RankUp SkillName Ranks.`")]
+        public async Task RankUp(string Name, int Ranks){
+            var players = Database.GetCollection<player>("Players");
+            var col = Database.GetCollection<Character>("Characters");
+            if (!players.Exists(x => x.DiscordId == Context.User.Id)){
+                await ReplyAndDeleteAsync(Context.User.Mention+", you've never made any character so I can't find your character! Please make one with `.newchar Name`!", timeout: TimeSpan.FromSeconds(5));                    return;
+            }
+            var plr = players
+                .Include(x => x.Character)
+                .Include(x => x.Character.AbilityScores) .Include(x => x.Character.Skills)
+                .FindOne(x => x.DiscordId == Context.User.Id);
+            if (plr.Character == null){
+                await ReplyAndDeleteAsync(Context.User.Mention+", you're not locked to a character! Use `.lock Character_Name` to lock into a character.",false,null,TimeSpan.FromSeconds(5));
+                return;
+            }
+            else{
+                var chr = plr.Character;
+                if (!chr.Skills.Exists(x => x.Name.ToLower().StartsWith(Name.ToLower()))){
+                    await ReplyAndDeleteAsync(Context.User.Mention+", "+chr.Name+" doesn't have a skill that starts with "+Name+".", timeout: TimeSpan.FromSeconds(5));
+                    return;
+                }
+                if (chr.Skills.Where(x => x.Name.ToLower().StartsWith(Name.ToLower())).Count() > 1 && !chr.Skills.Exists(x => x.Name.ToLower() == Name.ToLower())){
+                    var result = chr.Skills.Where(x => x.Name.ToLower().StartsWith(Name.ToLower()));
+                    var sb = new StringBuilder().Append(Context.User.Mention+", "+chr.Name+" has more than " + result.Count()+ "skills that starts with the word **"+Name+"**. Please specify which one from this list is the one you want to remove by using said skill's full name inside quotation marks: ");
+                    foreach (var x in result){
+                        sb.Append("`"+x.Name+"`, ");
+                    }
+                    await ReplyAndDeleteAsync(sb.ToString().Substring(0,sb.Length-2), timeout: TimeSpan.FromSeconds(10));
+                }
+                else{
+                    var skill = chr.Skills.Find(x => x.Name.ToLower().StartsWith(Name.ToLower()));
+                    var i = chr.Skills.FindIndex(x => x.Name.ToLower().StartsWith(Name.ToLower()));
+                    chr.Skills[i].Ranks += Ranks;
+                    col.Update(chr);
+                    await ReplyAsync(Context.User.Mention+", Increased "+chr.Name+"'s skill ranks in **"+skill.Name+"** by "+Ranks+".");
+                    await Context.Message.DeleteAsync();                    
+                }
+            }
+        }
+        [Command("RankDown"),Alias("RD")]
+        [Summary("Removes ranks to a skill you know. Usage: `.RankUp SkillName Ranks.`")]
+        public async Task RankDown(string Name, int Ranks){
+            var players = Database.GetCollection<player>("Players");
+            var col = Database.GetCollection<Character>("Characters");
+            if (!players.Exists(x => x.DiscordId == Context.User.Id)){
+                await ReplyAndDeleteAsync(Context.User.Mention+", you've never made any character so I can't find your character! Please make one with `.newchar Name`!", timeout: TimeSpan.FromSeconds(5));                    return;
+            }
+            var plr = players
+                .Include(x => x.Character)
+                .Include(x => x.Character.AbilityScores) .Include(x => x.Character.Skills)
+                .FindOne(x => x.DiscordId == Context.User.Id);
+            if (plr.Character == null){
+                await ReplyAndDeleteAsync(Context.User.Mention+", you're not locked to a character! Use `.lock Character_Name` to lock into a character.",false,null,TimeSpan.FromSeconds(5));
+                return;
+            }
+            else{
+                var chr = plr.Character;
+                if (!chr.Skills.Exists(x => x.Name.ToLower().StartsWith(Name.ToLower()))){
+                    await ReplyAndDeleteAsync(Context.User.Mention+", "+chr.Name+" doesn't have a skill that starts with "+Name+".", timeout: TimeSpan.FromSeconds(5));
+                    return;
+                }
+                if (chr.Skills.Where(x => x.Name.ToLower().StartsWith(Name.ToLower())).Count() > 1 && !chr.Skills.Exists(x => x.Name.ToLower() == Name.ToLower())){
+                    var result = chr.Skills.Where(x => x.Name.ToLower().StartsWith(Name.ToLower()));
+                    var sb = new StringBuilder().Append(Context.User.Mention+", "+chr.Name+" has more than " + result.Count()+ "skills that starts with the word **"+Name+"**. Please specify which one from this list is the one you want to remove by using said skill's full name inside quotation marks: ");
+                    foreach (var x in result){
+                        sb.Append("`"+x.Name+"`, ");
+                    }
+                    await ReplyAndDeleteAsync(sb.ToString().Substring(0,sb.Length-2), timeout: TimeSpan.FromSeconds(10));
+                }
+                else{
+                    var skill = chr.Skills.Find(x => x.Name.ToLower().StartsWith(Name.ToLower()));
+                    var i = chr.Skills.FindIndex(x => x.Name.ToLower().StartsWith(Name.ToLower()));
+                    
+                    if((chr.Skills[i].Ranks - Ranks)<0){
+                        chr.Skills[i].Ranks = 0;
+                        col.Update(chr);
+                        await ReplyAsync(Context.User.Mention+", Reduced "+chr.Name+"'s skill ranks in **"+skill.Name+"** to 0.");
+                        await Context.Message.DeleteAsync(); 
+                    }
+                    else {
+                        chr.Skills[i].Ranks -= Ranks;
+                        col.Update(chr);
+                        await ReplyAsync(Context.User.Mention+", Decreased "+chr.Name+"'s skill ranks in **"+skill.Name+"** by "+Ranks+".");
+                        await Context.Message.DeleteAsync();
+                    }                     
+                }
+            }
+        }
+        [Command("NewTrait"), Alias("AddTrait","NewFeat","AddFeat")]
         [Summary("Adds or update a trait on your locked character. Usage: `.NewTrait Name Description`")]
         public async Task NewTrait(string Name, string Description){
             var players = Database.GetCollection<player>("Players");
@@ -230,7 +318,7 @@ namespace OracleBot.Modules
                 await Context.Message.DeleteAsync();
             }
         }
-        [Command("RemoveTrait"), Alias("RemTrait","DelTrait","DeleteTrait")]
+        [Command("RemoveTrait"), Alias("RemTrait","DelTrait","DeleteTrait","RemoveFeat","RemFeat","DelFeat")]
         [Summary("Removes a trait from your locked character. Usage: `.RemTrait Name`")]
         public async Task RemTrait([Remainder] string Name){
             var players = Database.GetCollection<player>("Players");
@@ -425,31 +513,6 @@ namespace OracleBot.Modules
                 await Context.Message.DeleteAsync();
             }
         }
-        [Command("SetAC"), Alias("SetArmorClass")]
-        [Summary("Sets the Armor Class of your character. Usage: `.SetAC ArmorClass`.")]
-        public async Task SetAC([Remainder]int AC){
-            AC = Math.Abs(AC);
-            var players = Database.GetCollection<player>("Players");
-            var col = Database.GetCollection<Character>("Characters");
-            if (!players.Exists(x => x.DiscordId == Context.User.Id)){
-                await ReplyAndDeleteAsync(Context.User.Mention+", you've never made any character so I can't find your character! Please make one with `.newchar Name`!", timeout: TimeSpan.FromSeconds(5));                    return;
-            }
-            var plr = players
-                .Include(x => x.Character)
-                .Include(x => x.Character.AbilityScores) .Include(x => x.Character.Skills)
-                .FindOne(x => x.DiscordId == Context.User.Id);
-            if (plr.Character == null){
-                await ReplyAndDeleteAsync(Context.User.Mention+", you're not locked to a character! Use `.lock Character_Name` to lock into a character.",false,null,TimeSpan.FromSeconds(5));
-                return;
-            }
-            else{
-                var chr = plr.Character;
-                chr.ArmorClass = AC;
-                col.Update(chr);
-                await ReplyAsync(Context.User.Mention+", You set **"+chr.Name+"**'s Armor Class to "+ AC +".");
-                await Context.Message.DeleteAsync();
-            }
-        }
         [Command("SetHP")]
         [Summary("Sets the your character's extra HP (adds on top of your CON-based HP). Usage: `.SetHP HealthValue`.")]
         public async Task SetHP([Remainder]int HP){
@@ -524,31 +587,6 @@ namespace OracleBot.Modules
                 chr.Fullheal();
                 col.Update(chr);
                 await ReplyAsync(Context.User.Mention+", **"+chr.Name+"**'s Level went down by "+Levels +"!");
-                await Context.Message.DeleteAsync();
-            }
-        }
-        [Command("SetProf"), Alias("SetProficiency")]
-        [Summary("Set's your character's proficiency bonus. Usage: `.SetProf Amount`")]
-        public async Task SetProf([Remainder]int Amount = 1){
-            Amount = Math.Abs(Amount);
-            var players = Database.GetCollection<player>("Players");
-            var col = Database.GetCollection<Character>("Characters");
-            if (!players.Exists(x => x.DiscordId == Context.User.Id)){
-                await ReplyAndDeleteAsync(Context.User.Mention+", you've never made any character so I can't find your character! Please make one with `.newchar Name`!", timeout: TimeSpan.FromSeconds(5));                    return;
-            }
-            var plr = players
-                .Include(x => x.Character)
-                .Include(x => x.Character.AbilityScores) .Include(x => x.Character.Skills)
-                .FindOne(x => x.DiscordId == Context.User.Id);
-            if (plr.Character == null){
-                await ReplyAndDeleteAsync(Context.User.Mention+", you're not locked to a character! Use `.lock Character_Name` to lock into a character.",false,null,TimeSpan.FromSeconds(5));
-                return;
-            }
-            else{
-                var chr = plr.Character;
-                chr.Profiency = Amount;
-                col.Update(chr);
-                await ReplyAsync(Context.User.Mention+", **"+chr.Name+"**'s Proficiency Bonus was set to "+ Amount +".");
                 await Context.Message.DeleteAsync();
             }
         }

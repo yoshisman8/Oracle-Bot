@@ -84,83 +84,8 @@ namespace OracleBot.Modules
                 await Context.Message.DeleteAsync();
             }
         }
-        [Command("ItemMacro")]
-        [Summary("Sets the macro for one of your character's Attacks. usage: `.AttackMacro Name ItemLocation Macro`. Item Location is either 'Vault' or 'Global'. Only DMs can change global items. If you want to remove the macro from the attack, just use the command without any macro (ie: `.ItemMacro Potion Vault`) to rest it.")]
-        public async Task DelItem(string Name, ItemLocation Global, [Remainder] string Macro = ""){
-            var players = Database.GetCollection<player>("Players");
-            var ItemDb = Database.GetCollection<Item>("Items");
-            var User = Context.User as SocketGuildUser;
-            ItemDb.EnsureIndex("Name","LOWER($.Name)");
-
-            if(!players.Exists(x => x.DiscordId == Context.User.Id)){
-                players.Insert(new player(){
-                    DiscordId = Context.User.Id,
-                    Character = null
-                });
-            }
-            var plr = players
-                .Include(x => x.Character)
-                .Include(x => x.ItemVault)
-                .Include(x => x.Character.AbilityScores) .Include(x => x.Character.Skills)
-                .FindOne(x => x.DiscordId == Context.User.Id);
-            if (Global == ItemLocation.Global && !User.GuildPermissions.ManageMessages){
-                await ReplyAndDeleteAsync(User.Mention+", You can't set macros on items from global database! Only GMs can do that.",timeout: TimeSpan.FromSeconds(5));
-                return;
-            }
-            if (Global == ItemLocation.Vault){
-                var Query = plr.ItemVault.Where(x => x.Name.ToLower().StartsWith(Name));
-                if (Query.Count() == 0){
-                    await ReplyAndDeleteAsync(Context.User.Mention+", There isn't an item in your vault whose name starts with '"+Name+"'.",timeout: TimeSpan.FromSeconds(5));
-                    return;
-                }
-                else if (Query.Count() > 1 && !Query.ToList().Exists(x => x.Name.ToLower() == Name.ToLower())){
-                string msg = Context.User.Mention+", Multiple items were found! Please specify which one of the following items is the one you're looking for: ";
-                foreach (var q in Query)
-                {
-                    msg += "`" + q.Name + "`, ";
-                }
-                await ReplyAndDeleteAsync(msg.Substring(0,msg.Length-2), timeout: TimeSpan.FromSeconds(10));
-                return;
-                }
-                else if (Query.Count() == 1 || Query.ToList().Exists(x=>x.Name.ToLower() == Name.ToLower())){
-                    var item = Query.First();
-                    var index = plr.ItemVault.IndexOf(item);
-                    plr.ItemVault[index].Macro = Macro;
-                    players.Update(plr);
-                    await ReplyAsync(User.Mention+", the item **"+item.Name+"** from your Item Vault now has an assigned macro.");
-                    await Context.Message.DeleteAsync();
-                    return;
-                }
-            }
-            else if (Global == ItemLocation.Global){
-                var Query = ItemDb.Find(x => x.Name.ToLower().StartsWith(Name));
-                if (Query.Count() == 0){
-                    await ReplyAndDeleteAsync(Context.User.Mention+", There isn't an item in the database whose name starts with '"+Name+"'.",timeout: TimeSpan.FromSeconds(5));
-                    return;
-                }
-                else if (Query.Count() > 1 && !Query.ToList().Exists(x => x.Name.ToLower() == Name.ToLower())){
-                string msg = Context.User.Mention+", Multiple items were found! Please specify which one of the following items is the one you're looking for: ";
-                foreach (var q in Query)
-                {
-                    msg += "`" + q.Name + "`, ";
-                }
-                await ReplyAndDeleteAsync(msg.Substring(0,msg.Length-2), timeout: TimeSpan.FromSeconds(10));
-                return;
-                }
-                else if (Query.Count() == 1 || Query.ToList().Exists(x=>x.Name.ToLower() == Name.ToLower())){
-                    var item = Query.First();
-                    item.Macro = Macro;
-                    ItemDb.Update(item);
-                    await ReplyAsync(User.Mention+", the item **"+item.Name+"** from the item Database now has an assigned macro.");
-                    await Context.Message.DeleteAsync();
-                    return;
-                }
-            }
-            await ReplyAndDeleteAsync(User.Mention+", I couldn't find an item whose name is **"+Name+"**. (It has to be the full name!)",timeout: TimeSpan.FromSeconds(5));
-        }
     }
-
-    public static class MacroProcessor{
+public static class MacroProcessor{
         public static string ParseReference(string Reference, Character Character){
             var regex = new Regex(@"\[(.*?)\]");
             string returnstring = Reference;
@@ -182,9 +107,6 @@ namespace OracleBot.Modules
                         break;
                     case "[wis]":
                         returnstring = returnstring.Replace(x,Character.AbilityScores[4].GetValue(true));
-                        break;
-                    case "[prof]":
-                        returnstring= returnstring.Replace(x,Character.Profiency.ToString());
                         break;
                     case "[str-mod]":
                         buffer = Character.AbilityScores[0].GetMod(true);
@@ -218,7 +140,7 @@ namespace OracleBot.Modules
                         returnstring = returnstring.Replace(x,Character.Health.GetHealth(Character.AbilityScores[2].GetValue(true)).ToString());
                         break;
                     case "[ac]":
-                        returnstring = returnstring.Replace(x,Character.ArmorClass.ToString());
+                        returnstring = returnstring.Replace(x,(10+Character.ParseArmor()).ToString());
                         break;
                     default:
                         returnstring = returnstring.Replace(x, "");

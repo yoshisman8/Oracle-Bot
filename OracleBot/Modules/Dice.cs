@@ -20,28 +20,42 @@ namespace OracleBot.Modules
         public LiteDatabase Database {get;set;}
 
         [Command("Roll"), Alias("r")]
-        [Summary("Rolls a die on a xdy expression format. \nUsage: `.Roll <dice expression>`.")]
+        [Summary("Rolls a die on a xdy expression format. \nUsage: `.Roll <dice expression>`.\n"+
+        "You can reference your locked character stats by adding them in between brackets. Example: `.Roll 1d20 + [STR-mod] + 3`. For more info on references use {COMMAND TBD}")]
         public async Task DieRoll([Remainder]string input = "d20")
         {
+            var players = Database.GetCollection<player>("Players");
+            var col = Database.GetCollection<Character>("Characters");
+            if (players.Exists(x => x.DiscordId == Context.User.Id) && MacroProcessor.IsReference(input)){
+                var plr = players
+                .Include(x => x.Character)
+                .Include(x => x.Character.AbilityScores) .Include(x => x.Character.Skills)
+                .FindOne(x => x.DiscordId == Context.User.Id);
+                if (plr.Character == null){
+                    await ReplyAndDeleteAsync(Context.User.Mention+", you're not locked to a character! Use `.lock Character_Name` to lock into a character in order to reference stats.",false,null,TimeSpan.FromSeconds(5));
+                    return;
+                }
+                
+            }
             string[] sinput = new string[0];
             if (input.Contains(">>")){
                 sinput = input.Split(">>",StringSplitOptions.RemoveEmptyEntries);
                 if (sinput.Length == 1){
-                    await ReplyAsync("You didn't add a conditional!");
+                    await ReplyAndDeleteAsync("You didn't add a conditional!", timeout: TimeSpan.FromSeconds(5));
                     return;
                 }
                 if (sinput.Length > 2){
-                    await ReplyAsync("You can't add more than one conditional!");
+                    await ReplyAndDeleteAsync("You can't add more than one conditional!", timeout: TimeSpan.FromSeconds(5));
                     return;
                 }
                 if (!int.TryParse(sinput[1], out int n)){
-                    await ReplyAsync("This expression has an invalid/non-numeric conditional!");
+                    await ReplyAndDeleteAsync("This expression has an invalid/non-numeric conditional!", timeout: TimeSpan.FromSeconds(5));
                     return;
                 }
                 int conditional = int.Parse(sinput[1]);
                 var valid = System.Text.RegularExpressions.Regex.IsMatch(sinput[0].ToLower(), @"^[d-dk-k0-9\+\-\s\*]*$");
                 if (!valid){
-                    await ReplyAsync(Context.User.Mention+" This is not a valid dice expression!");
+                await ReplyAndDeleteAsync(Context.User.Mention+" This is not a valid dice expression!", timeout: TimeSpan.FromSeconds(5));
                     return;
                 }
                 var result = parser.Parse(sinput[0].ToLower()).Roll();
@@ -69,21 +83,21 @@ namespace OracleBot.Modules
             if (input.Contains(">")){
                 sinput = input.Split(">",StringSplitOptions.RemoveEmptyEntries);
                 if (sinput.Length == 1){
-                    await ReplyAsync("You didn't add a conditional!");
+                    await ReplyAndDeleteAsync("You didn't add a conditional!", timeout: TimeSpan.FromSeconds(5));
                     return;
                 }
                 if (sinput.Length > 2){
-                    await ReplyAsync("You can't add more than one conditional!");
+                    await ReplyAndDeleteAsync("You can't add more than one conditional!", timeout: TimeSpan.FromSeconds(5));
                     return;
                 }
                 if (!int.TryParse(sinput[1], out int n)){
-                    await ReplyAsync("This expression has an invalid/non-numeric conditional!");
+                    await ReplyAndDeleteAsync("This expression has an invalid/non-numeric conditional!", timeout: TimeSpan.FromSeconds(5));
                     return;
                 }
                 int conditional = int.Parse(sinput[1]);
                 var valid = System.Text.RegularExpressions.Regex.IsMatch(sinput[0].ToLower(), @"^[d-dk-k0-9\+\-\s\*]*$");
                 if (!valid){
-                    await ReplyAsync(Context.User.Mention+" This is not a valid dice expression!");
+                await ReplyAndDeleteAsync(Context.User.Mention+" This is not a valid dice expression!", timeout: TimeSpan.FromSeconds(5));
                     return;
                 }
                 var result = parser.Parse(sinput[0].ToLower()).Roll();
@@ -113,7 +127,7 @@ namespace OracleBot.Modules
             else {
             var valid = System.Text.RegularExpressions.Regex.IsMatch(input.ToLower(), @"^[d-dk-k0-9\+\-\s\*]*$");
             if (!valid){
-                await ReplyAsync(Context.User.Mention+" This is not a valid dice expression!");
+                await ReplyAndDeleteAsync(Context.User.Mention+" This is not a valid dice expression!", timeout: TimeSpan.FromSeconds(5));
                 return;
             }
             var result = parser.Parse(input.ToLower()).Roll();
@@ -135,9 +149,14 @@ namespace OracleBot.Modules
         }
         [Command("SkillCheck"), Alias("SC")]
         [Summary("Rolls a skill check for your locked character. Usage: `.SC Skill_Name`")]
-        public async Task SkillCheck([Remainder] string Name){
+        public async Task SkillCheck(string Name, [Remainder] string Extra = ""){
             var players = Database.GetCollection<player>("Players");
             var col = Database.GetCollection<Character>("Characters");
+            var valid = System.Text.RegularExpressions.Regex.IsMatch(Extra.ToLower(), @"^[d-dk-k0-9\+\-\s\*]*$");
+            if (!valid && Extra != ""){
+                await ReplyAndDeleteAsync(Context.User.Mention+" This is not a valid dice expression!", timeout: TimeSpan.FromSeconds(5));
+                return;
+            }
             if (!players.Exists(x => x.DiscordId == Context.User.Id)){
                 await ReplyAndDeleteAsync(Context.User.Mention+", you've never made any character so I can't find your character! Please make one with `.newchar Name`!", timeout: TimeSpan.FromSeconds(5));                    return;
             }
@@ -166,18 +185,35 @@ namespace OracleBot.Modules
                 else{
                     var skill = chr.Skills.Find(x => x.Name.ToLower().StartsWith(Name.ToLower()));
                     string mod = (chr.AbilityScores[(int)skill.Ability].GetMod(true));
-                    string Prof = ((int)skill.Proficiency*chr.Profiency).ToString();
-                    var result = parser.Parse("1d20 + "+mod+"+"+Prof).Roll();
-                    await ReplyAsync(Context.User.Mention+", "+chr.Name+" rolled a **"+result.Value+"** ("+result.Results[0].Value+"+"+mod+"+"+Prof+") on their "+skill.Name+" Check");
+                    string ranks = skill.Ranks.ToString();
+                    var ExtraR = Extra != "" ? parser.Parse(Extra).Roll() : null;
+                    var result = parser.Parse("1d20 + "+mod+"+"+ranks+"+"+ExtraR.Value.ToString()).Roll();
+                    string bfr = "";
+                    if (ExtraR != null){
+                        foreach(var x in ExtraR.Results){
+                            bfr += "+"+x.Value;
+                        }
+                        var ematch = Regex.Matches(Extra,@"\W[\+\-]?[\w\W]?[0-9]+\b").Cast<Match>().Select(match => match.Value).ToList();
+                        foreach (var x in ematch){
+                            bfr += x;
+                        }                        
+                    }
+                    await ReplyAsync(Context.User.Mention+", "+chr.Name+" rolled a **"+result.Value+"** ("+result.Results[0].Value+"+"+mod+"+"+ranks+bfr+") on their "+skill.Name+" Check");
                     await Context.Message.DeleteAsync();                    
                 }
             }
         }
         [Command("SavingThrow"), Alias("ST")]
-        [Summary("Rolls a skill check for your locked character. Usage: `.ST Ability`")]
-        public async Task SavingThrow(AbilityShort Score){
+        [Summary("Rolls a skill check for your locked character. Usage: `.ST Ability (Optional)ExtraBonuses`\n"+
+                "Note on Extra bonuses: These can be things like a plus or minus to said saving throw. You can also add regular dice rolls here, for example: `.ST Will + 1d6` to add an extra 1d6 to your saving throw.")]
+        public async Task SavingThrow(SavingThrows save, [Remainder] string extra = ""){
             var players = Database.GetCollection<player>("Players");
             var col = Database.GetCollection<Character>("Characters");
+            var valid = System.Text.RegularExpressions.Regex.IsMatch(extra.ToLower(), @"^[d-dk-k0-9\+\-\s\*]*$");
+            if (!valid && extra != ""){
+                await ReplyAndDeleteAsync(Context.User.Mention+" This is not a valid dice expression!", timeout: TimeSpan.FromSeconds(5));
+                return;
+            }
             if (!players.Exists(x => x.DiscordId == Context.User.Id)){
                 await ReplyAndDeleteAsync(Context.User.Mention+", you've never made any character so I can't find your character! Please make one with `.newchar Name`!", timeout: TimeSpan.FromSeconds(5));                    return;
             }
@@ -191,10 +227,20 @@ namespace OracleBot.Modules
             }
             else{
                 var chr = plr.Character;
-                string Mod = chr.AbilityScores[(int)Score].GetMod(true);
-                string Prof = ((int)chr.AbilityScores[(int)Score].Trained*chr.Profiency).ToString();
-                var result = parser.Parse("1d20 + "+ Mod +" + "+Prof).Roll();
-                await ReplyAsync(Context.User.Mention+", "+chr.Name+" Rolled a **"+result.Value+"** ("+result.Results[0].Value+"+"+Mod+"+"+Prof+") on their "+Score+" Saving Throw.");
+                string Mod = chr.Health.GetSave(save,chr.AbilityScores).ToString();
+                var ExtraR = extra != "" ? parser.Parse(extra).Roll() : null;
+                var result = parser.Parse("1d20 + "+ Mod +" + "+ExtraR.Value).Roll();
+                    string bfr = "";
+                    if (ExtraR != null){
+                        foreach(var x in ExtraR.Results){
+                            bfr += "+"+x.Value;
+                        }
+                        var ematch = Regex.Matches(extra,@"\W[\+\-]?[\w\W]?[0-9]+\b").Cast<Match>().Select(match => match.Value).ToList();
+                        foreach (var x in ematch){
+                            bfr += x;
+                        }                        
+                    }
+                await ReplyAsync(Context.User.Mention+", "+chr.Name+" Rolled a **"+result.Value+"** ("+result.Results[0].Value+"+"+Mod+bfr+") on their "+save+" Saving Throw.");
                 await Context.Message.DeleteAsync();
             }
         }
@@ -203,11 +249,11 @@ namespace OracleBot.Modules
         [Summary("Rolls Five values that can be used as Ability Scores.")]
         public async Task Rollstats(){
             var sb = new StringBuilder();
-            for (int i = 0; i <5 ; i++){
+            for (int i = 0; i <6 ; i++){
                 var result = parser.Parse("4d6k3").Roll();
                 sb.Append("[**"+result.Value+"**] ");
             }
-            await ReplyAsync(Context.User.Mention+", Here are your 5 Ability Scores: "+sb.ToString());
+            await ReplyAsync(Context.User.Mention+", Here are your 6 Ability Scores: "+sb.ToString());
             await Context.Message.DeleteAsync();
         }
     }

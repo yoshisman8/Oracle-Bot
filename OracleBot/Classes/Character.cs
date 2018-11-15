@@ -19,34 +19,34 @@ namespace OracleBot.Classes
         public HealthBlock Health {get;set;} = new HealthBlock();
         public string Class {get;set;} = "Classless";
         public string Race {get;set;} = "Generic";
-        public AbScore[] AbilityScores {get;set;} = new AbScore[5]; //STR, DEX, CON, INT, WIS
+        public AbScore[] AbilityScores {get;set;} = new AbScore[5]; //STR, DEX, CON, INT, WIS, CHA
         public List<Ability> Traits {get;set;} = new List<Ability>();
         public List<Skill> Skills {get;set;} = new List<Skill>();
         public List<Ability> Abilities {get;set;} = new List<Ability>();
         public List<Attack> Attacks {get;set;} = new List<Attack>();
-        public List<PlayerItem> Inventory {get;set;} = new List<PlayerItem>();
+        public List<Item> Inventory {get;set;} = new List<Item>();
         public double Money {get;set;} = 0;
-        public bool CodeblockMode {get;set;} = false;
+        public bool CodeblockMode {get;set;} = true;
 
         public Embed GetSheet(){
             var eb = new EmbedBuilder()
                 .WithTitle(Name + " the "+ Race + " " + Class)
                 .AddField("Ability Scores", "```ini\n⚔️ STR | "+AbilityScores[0].GetValue()+" ["+ AbilityScores[0].GetMod()+"] "+AbilityScores[0].IsTrained()+
-                "\n🗡️ DEX | "+AbilityScores[1].GetValue()+" ["+ AbilityScores[1].GetMod()+"] "+AbilityScores[1].IsTrained()+
-                "\n💗 CON | "+AbilityScores[2].GetValue()+" ["+ AbilityScores[2].GetMod()+"] "+AbilityScores[2].IsTrained()+
-                "\n🧠 INT | "+AbilityScores[3].GetValue()+" ["+ AbilityScores[3].GetMod()+"] "+AbilityScores[3].IsTrained()+
-                "\n🧙 WIS | "+AbilityScores[4].GetValue()+" ["+ AbilityScores[4].GetMod()+"] "+AbilityScores[4].IsTrained()+
-                "\n🧙 CHA | "+AbilityScores[5].GetValue()+" ["+ AbilityScores[4].GetMod()+"] "+AbilityScores[4].IsTrained()+"```",true)
-                .AddField("Statistics", "```css\n🔰 Level: "+ Health.Level+"\n🛡 Armor Class: "+10+ParseArmor()+"\n🔴 Health: ["+Health.Current+"/"+Health.GetHealth()+"]\n💮 Skill Ranks: "+CountRanks()+"\n💫 Attacks: "+Attacks.Count+"```",true)
+                "\n🗡️ DEX | "+AbilityScores[1].GetValue()+" ["+ AbilityScores[1].GetMod()+"] "+
+                "\n💗 CON | "+AbilityScores[2].GetValue()+" ["+ AbilityScores[2].GetMod()+"] "+
+                "\n🧠 INT | "+AbilityScores[3].GetValue()+" ["+ AbilityScores[3].GetMod()+"] "+
+                "\n🧙 WIS | "+AbilityScores[4].GetValue()+" ["+ AbilityScores[4].GetMod()+"] "+
+                "\n👥 CHA | "+AbilityScores[5].GetValue()+" ["+ AbilityScores[5].GetMod()+"] "+"```",true)
+                .AddField("Statistics", "```css\n🔰 Level: "+ Health.Level+"\n🔴 Health: ["+Health.Current+"/"+Health.GetHealth(AbilityScores[2].GetMod())+"]"+"\n🛡 Defense Rating: "+10+ParseArmor()+"\n💥 Attack Rating: "+Health.GetBab()+"\nREF | FORT | WILL\n"+"[+"+Health.GetSave(SavingThrows.Reflex,AbilityScores)+"] | "+"[+"+Health.GetSave(SavingThrows.Fortitude,AbilityScores)+"] | "+"[+"+Health.GetSave(SavingThrows.Will,AbilityScores)+"]"+"```",true)
                 .WithThumbnailUrl(Image)
                 .WithColor(new Color(Color[0],Color[1],Color[2]));
             var sb = new StringBuilder();
-            if (Traits.Count == 0) eb.AddField("Traits","Use `.NewTrait Name Description` to add.",true);
+            if (Traits.Count == 0) eb.AddField("Traits and Feats","Use `.NewTrait Name Description` to add.",true);
             else{
                 foreach(var x in Traits){
                     sb.AppendLine("• "+x.Name);
                 }
-                if (CodeblockMode) eb.AddField("Traits","```"+sb.ToString()+"```",true);
+                if (CodeblockMode) eb.AddField("Traits and Feats","```"+sb.ToString()+"```",true);
                 else eb.AddField("Traits",sb.ToString(),true);
                 sb.Clear();
             }
@@ -63,16 +63,19 @@ namespace OracleBot.Classes
 
             if (Skills.Count == 0) eb.AddField("Skills","Use `.NewSkill Name Ability_Score Proficiency` to add.",true);
             else{
-                foreach(var x in Skills){
-                    sb.AppendLine("• "+x.Name+"("+x.Ability+") "+"["+x.Proficiency+"]");
+                var sort = Skills.OrderBy(x=> x.Ranks);
+                for(int i = 0; i > 5 ; i++){
+                    var x = sort.ElementAt(i);
+                    sb.AppendLine("• "+x.Name+"("+x.Ability+") "+"["+(x.Ranks+AbilityScores[(int)x.Ability].GetIntMod())+"]");
                 }
                 if(CodeblockMode) eb.AddField("Skills","```ini\n"+sb.ToString()+"```",true);
                 else eb.AddField("Skills",sb.ToString(),true);
                 sb.Clear();
             }
             sb.AppendLine("$"+Money.ToString());
-            foreach (var x in Inventory){
-                sb.AppendLine("• "+x.Item.Name+" [x"+x.Quantity+"]");
+            var inv = Inventory.Where(x=>x.Quantity>0);
+            foreach(var x in inv){
+                sb.AppendLine("• "+x.Name+" [x"+x.Quantity+"]");
             }
             if (CodeblockMode) eb.AddField("Inventory","```css\n"+sb.ToString()+"```",true);
             else eb.AddField("Inventory",sb.ToString(),true);
@@ -80,43 +83,14 @@ namespace OracleBot.Classes
             return eb.Build();
         }
         public void Fullheal(){
-            Health.Current = Health.GetHealth(AbilityScores[2].GetValue());
-        }
-        public void BuildInventory(LiteDatabase Database, player player){
-            var col = Database.GetCollection<Item>("Items");
-            var db = Database.GetCollection<Character>("Characters");
-            var buffer = new List<PlayerItem>();
-            foreach(var x in Inventory){
-                var index = Inventory.IndexOf(x);
-                if (x.Item.Id != -1 && col.Exists(y => y.Id == x.Item.Id)){
-                    var item = col.FindOne(y => y.Id == x.Item.Id);
-                    buffer.Add(new PlayerItem(){
-                        Item = item,
-                        Quantity = x.Quantity
-                        });
-                }
-                else if(player.ItemVault.Exists(y => y.Name.ToLower() == x.Item.Name.ToLower())){
-                    var item = player.ItemVault.Find(y => y.Name.ToLower() == x.Item.Name.ToLower());
-                    buffer.Add(new PlayerItem(){
-                        Item = item,
-                        Quantity = x.Quantity
-                        });
-                }
-                else if(!player.ItemVault.Exists(y => y.Name.ToLower() == x.Item.Name.ToLower()) && col.Exists(y => y.Name == x.Item.Name.ToLower())){
-                    var item = col.FindOne(y => y.Name == x.Item.Name.ToLower());
-                    buffer.Add(new PlayerItem(){
-                        Item = item,
-                        Quantity = x.Quantity
-                        });
-                }
-            }
-            Inventory = buffer;
-            db.Update(this);
+            Health.Current = Health.GetHealth(AbilityScores[2].GetMod());
         }
         public int ParseArmor(){
-            foreach (var x in Inventory){
-                
+            int tot = 0;
+            foreach (var x in Inventory.Where(x=> x.Type == ItemType.Armor && x.Worn == true)){
+                tot += int.Parse(x.Value);
             }
+            return tot+AbilityScores[1].GetIntMod();
         }
     }
     public class HealthBlock {
@@ -124,17 +98,34 @@ namespace OracleBot.Classes
         public int Extra {get;set;} = 0;
         public int Current {get;set;} = 5;
         public int Base {get;set;} = 6;
-
-        [BsonIgnore]
-        public Dictionary<int,int> values = new Dictionary<int, int>(){
-            {0,0}, {1,1}, {2,1}, {3,1}, {4,2}, {5,2}, {6,3}, {7,3}, {8,4}, {9,4}, 
-            {10,5}, {11,6}, {12,7}, {13,8}, {14,9}, {15,10}, {16,11}, {17,12}, {18,13}, {19,14}, {20,15},
-            {21,16}, {22,17}, {23,18}, {24,19}, {25,20}, {26,21}, {27,22}, {28,29}, {29,24}, {30,25}
-        };
+        public bool Reflex {get;set;} = false;
+        public bool Fortitude {get;set;} = false;
+        public bool Will {get;set;} = false;
+        public bool FullBaB {get;set;} = false;
 
         public int GetHealth(string Constitution){
-            var tot = (values.GetValueOrDefault(int.Parse(Constitution))*Level)+Extra;
-            return tot;
+            var tot = (Base*Level)+Constitution;
+            return int.Parse(tot);
+        }
+        public int GetBab(){
+            int bab = FullBaB ? Convert.ToInt32(Math.Floor((double)Level*(3/4))) : Level;
+            return bab;
+        }
+        public int GetSave(SavingThrows Save, AbScore[] Scores){
+            int ret = 0;
+            switch (Save){
+                case SavingThrows.Reflex:
+                    ret = Reflex ? Convert.ToInt32(Math.Floor((double)Level*(1/3))) : Convert.ToInt32(Math.Floor((Level+4)*0.5));
+                    return ret + Scores[1].GetIntMod();
+                case SavingThrows.Fortitude:
+                    ret = Fortitude ? Convert.ToInt32(Math.Floor((double)Level*(1/3))) : Convert.ToInt32(Math.Floor((Level+4)*0.5));
+                    return ret + Scores[2].GetIntMod();
+                case SavingThrows.Will:
+                    ret = Will ? Convert.ToInt32(Math.Floor((double)Level*(1/3))) : Convert.ToInt32(Math.Floor((Level+4)*0.5));
+                    return ret + Scores[4].GetIntMod();
+                default:
+                    return ret;
+            }
         }
     }
     public class AbScore{
@@ -187,20 +178,17 @@ namespace OracleBot.Classes
         public Proficiency Proficiency {get;set;} = Proficiency.Untrained;
     }
     public class Item {
-        [BsonId]
-        public int Id {get;set;}
         public string Name {get;set;} = "";
-        public string Description {get;set;} = "";
-        public string Macro {get;set;} = "";
-        public ItemType Type {get;set;} = ItemType.Miscellanous;
-    }
-    public class PlayerItem{
-        public Item Item {get;set;}
         public int Quantity {get;set;} = 1;
+        public string Description {get;set;} = "";
+        public bool Worn {get;set;} = false;
+        public string Value {get;set;} = "";
+        public ItemType Type {get;set;} = ItemType.Miscellanous;
     }
     public enum AbilityScores {Strength = 0, Dexterity = 1, Constitution = 2, Intelligance = 3, Wisdom = 4, Charisma = 5}
     public enum AbilityShort {STR = 0, DEX = 1, CON = 2, INT = 3, WIS = 4, CHA = 5}
+    public enum SavingThrows {Reflex, Will, Fortitude}
     public enum Proficiency {Untrained = 0, Trained = 1, Expert = 2}
     public enum AttackType {Melee, Spell}
-    public enum ItemType {Armor, Weapon, Extra, Miscellanous}
+    public enum ItemType {Armor, Weapon, Consumable, Extra, Miscellanous}
 }

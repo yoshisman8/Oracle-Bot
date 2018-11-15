@@ -104,7 +104,6 @@ namespace OracleBot.Modules
                 }
                 else{
                     var chr = plr.Character;
-                    chr.BuildInventory(Database,plr);
                     await ReplyAsync("",false,chr.GetSheet());
                     await Context.Message.DeleteAsync();
                 }
@@ -126,7 +125,6 @@ namespace OracleBot.Modules
                 }
                 else if (Query.Count() == 1 || Query.ToList().Exists(x => x.Name.ToLower() == Name.ToLower())){
                     var chr = Query.FirstOrDefault();
-                    chr.BuildInventory(Database,plr);
                     await ReplyAsync("",false,chr.GetSheet());
                     await Context.Message.DeleteAsync();
                 }
