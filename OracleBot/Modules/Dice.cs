@@ -35,7 +35,7 @@ namespace OracleBot.Modules
                     await ReplyAndDeleteAsync(Context.User.Mention+", you're not locked to a character! Use `.lock Character_Name` to lock into a character in order to reference stats.",false,null,TimeSpan.FromSeconds(5));
                     return;
                 }
-                
+                input = MacroProcessor.ParseReference(input,plr.Character);
             }
             string[] sinput = new string[0];
             if (input.Contains(">>")){
