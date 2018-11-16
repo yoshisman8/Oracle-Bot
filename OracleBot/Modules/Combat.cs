@@ -119,7 +119,7 @@ namespace OracleBot.Modules
                 else if (Query.Count() == 1 || Query.ToList().Exists(x => x.Name.ToLower() == Name.ToLower())){
                     var chr = Query.FirstOrDefault();
                     chr.Health.Current += amount;
-                    if (chr.Health.Current > chr.Health.GetHealth(chr.AbilityScores[2].GetValue())) chr.Health.Current = chr.Health.GetHealth(chr.AbilityScores[2].GetValue());
+                    if (chr.Health.Current > chr.Health.GetHealth(chr.AbilityScores[2].GetIntMod().ToString())) chr.Health.Current = chr.Health.GetHealth(chr.AbilityScores[2].GetIntMod().ToString());
                     col.Update(chr);
                     await ReplyAsync(Context.User.Mention+", "+chr.Name+" healed **"+amount+"** Hit Points.");
                     await Context.Message.DeleteAsync();
@@ -147,7 +147,7 @@ namespace OracleBot.Modules
                 }
                 else{
                     var chr = plr.Character;
-                    chr.Health.Current = chr.Health.GetHealth(chr.AbilityScores[2].GetValue());
+                    chr.Health.Current = chr.Health.GetHealth(chr.AbilityScores[2].GetIntMod().ToString());
                     col.Update(chr);
                     await ReplyAsync(Context.User.Mention+", "+chr.Name+" fully healed healed their Hit Points.");
                     await Context.Message.DeleteAsync();
@@ -170,7 +170,7 @@ namespace OracleBot.Modules
                 }
                 else if (Query.Count() == 1 || Query.ToList().Exists(x => x.Name.ToLower() == Name.ToLower())){
                     var chr = Query.FirstOrDefault();
-                    chr.Health.Current = chr.Health.GetHealth(chr.AbilityScores[2].GetValue());
+                    chr.Health.Current = chr.Health.GetHealth(chr.AbilityScores[2].GetIntMod().ToString());
                     col.Update(chr);
                     await ReplyAsync(Context.User.Mention+", "+chr.Name+" healed fully healed their Hit Points.");
                     await Context.Message.DeleteAsync();

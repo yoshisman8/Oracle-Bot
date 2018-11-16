@@ -331,7 +331,7 @@ namespace OracleBot.Modules
                     var sb = new StringBuilder();
                     foreach(var x in chr.Skills.OrderBy(x => x.Name))
                     {
-                        sb.AppendLine("• "+x.Name+"("+x.Ability+") "+"["+(x.Ranks+chr.AbilityScores[(int)x.Ability].GetIntMod())+"]");
+                        sb.AppendLine("• "+x.Name+"("+x.Ability+") ["+x.Ranks+"] [+"+(x.Ranks+chr.AbilityScores[(int)x.Ability].GetIntMod())+"]");
                     }
                     embed.Description = sb.ToString();
                     await ReplyAsync("",false,embed.Build());
@@ -361,7 +361,7 @@ namespace OracleBot.Modules
                     var sb = new StringBuilder();
                     foreach(var x in chr.Skills.OrderBy(x => x.Name))
                     {
-                        sb.AppendLine("• "+x.Name+"("+x.Ability+") "+"["+(x.Ranks+chr.AbilityScores[(int)x.Ability].GetIntMod())+"]");
+                    sb.AppendLine("• "+x.Name+"("+x.Ability+") ["+x.Ranks+"] [+"+(x.Ranks+chr.AbilityScores[(int)x.Ability].GetIntMod())+"]");
                     }
                     embed.Description = sb.ToString();
                     await ReplyAsync("",false,embed.Build());

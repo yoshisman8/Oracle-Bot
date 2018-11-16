@@ -130,7 +130,7 @@ namespace OracleBot.Modules
                     var index = chr.Skills.FindIndex(x => x.Name.ToLower() == Name.ToLower());
                     var skill = chr.Skills.ElementAt(index);
                     skill.Ability = Score;
-                    skill.ClassSkill = ((int)ClassSkill == 1) ? true : false;
+                    skill.ClassSkill = (ClassSkill == BoolEnum.Yes) ? true : false;
                     string status = skill.ClassSkill ? "and is now set as a **Class Skill**." : ".";
                     chr.Skills[index] = skill;
                     await ReplyAsync(Context.User.Mention+", you updated your character's **"+skill.Name+"** skill to use **"+Score+"**"+status);
@@ -139,7 +139,7 @@ namespace OracleBot.Modules
                     var skill = new Skill(){
                         Name = Name,
                         Ability = Score,
-                        ClassSkill = ((int)ClassSkill == 1) ? true : false
+                        ClassSkill = (ClassSkill == BoolEnum.Yes) ? true : false
                     }; 
                     string status = skill.ClassSkill ? "and is now set as a **Class Skill**." : ".";
                     chr.Skills.Add(skill);

@@ -150,7 +150,7 @@ namespace OracleBot.Modules
         [Command("SkillCheck"), Alias("SC")]
         [Summary("Rolls a skill check for your locked character. Usage: `.SC Skill_Name`")]
         public async Task SkillCheck(string Name, [Remainder] string Extra = ""){
-            Extra = Extra == "" ? "" : "+0"+Extra;
+            Extra = Extra == "" ? "" : "0"+Extra;
             var players = Database.GetCollection<player>("Players");
             var col = Database.GetCollection<Character>("Characters");
             var valid = System.Text.RegularExpressions.Regex.IsMatch(Extra.ToLower(), @"^[d-dk-k0-9\+\-\s\*]*$");
@@ -189,7 +189,7 @@ namespace OracleBot.Modules
                     string ranks = skill.Ranks.ToString();
                     string classbonus = skill.ClassSkill ? "+3" : "";
                     var ExtraR = Extra != "" ? parser.Parse(Extra).Roll() : parser.Parse("0").Roll();
-                    var result = parser.Parse("1d20 + "+mod+"+"+ranks+"+"+classbonus+ExtraR.Value.ToString()).Roll();
+                    var result = parser.Parse("1d20 + "+mod+"+"+ranks+classbonus+"+"+ExtraR.Value.ToString()).Roll();
                     string bfr = "";
                     if (ExtraR != null){
                         foreach(var x in ExtraR.Results){

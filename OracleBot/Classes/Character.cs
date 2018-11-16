@@ -65,7 +65,7 @@ namespace OracleBot.Classes
                 var sort = Skills.OrderBy(x=> x.Ranks).Reverse();
                 for(int i = 0; i < 5 ; i++){
                     var x = sort.ElementAt(i);
-                    sb.AppendLine("• "+x.Name+"("+x.Ability+") "+"["+(x.Ranks+AbilityScores[(int)x.Ability].GetIntMod())+"]");
+                    sb.AppendLine("• "+x.Name+"("+x.Ability+") ["+x.Ranks+"] [+"+(x.Ranks+AbilityScores[(int)x.Ability].GetIntMod())+"]");
                 }
                 if(CodeblockMode) eb.AddField("Skills","```ini\n"+sb.ToString()+"```",true);
                 else eb.AddField("Skills",sb.ToString(),true);
