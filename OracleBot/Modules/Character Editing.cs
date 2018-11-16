@@ -17,7 +17,7 @@ namespace OracleBot.Modules
         public LiteDatabase Database {get;set;}
         [Command("SetScore")]
         [Summary("Set your locked character's ability score. Usage: `.SetScore AbScore Value Proficiency` valid Scores are `STR/DEX/CON/INT/WIS` and Proficiencies are `Untrained/Trained/Expert`. All case sensitive.")]
-        public async Task SetAbScore(AbilityShort Score, int Value, Proficiency Prof = Proficiency.Untrained){
+        public async Task SetAbScore(AbilityShort Score, int Value){
             Value = Math.Abs(Value);
             if (Value > 30){
                 await ReplyAndDeleteAsync(Context.User.Mention+", You can't set ability scores higher than 30!", timeout: TimeSpan.FromSeconds(5));
@@ -39,10 +39,9 @@ namespace OracleBot.Modules
             else{
                 var chr = plr.Character;
                 chr.AbilityScores[(int)Score].Value = Value;
-                chr.AbilityScores[(int)Score].Trained = Prof;
                 if (Score == AbilityShort.CON) chr.Fullheal();
                 col.Update(chr);
-                await ReplyAsync(Context.User.Mention+", You set **"+chr.Name+"**'s "+Score+" to "+Value+" ["+Prof+"]");
+                await ReplyAsync(Context.User.Mention+", You set **"+chr.Name+"**'s "+Score+" to "+Value+".");
                 await Context.Message.DeleteAsync();
             }
         }
