@@ -94,16 +94,18 @@ namespace OracleBot.Modules
             }
             else{
                 var chr = plr.Character;
-                if (Context.Message.Attachments.Count() > 0){
+                if (Context.Message.Attachments.Count() >= 1){
                     chr.Image = Context.Message.Attachments.First().Url;
+                    col.Update(chr);
                     await ReplyAsync(Context.User.Mention+", You set **"+chr.Name+"**'s thumbnail image.");                    
+                    return;
                 }
                 else {
                     chr.Image = ImageURL;
+                    col.Update(chr);
                     await ReplyAsync(Context.User.Mention+", You set **"+chr.Name+"**'s thumbnail image.");
                     await Context.Message.DeleteAsync();    
                 }
-                col.Update(chr);
             }
         }
 
