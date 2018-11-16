@@ -36,20 +36,41 @@ namespace OracleBot.Services
 
             _discord.MessageReceived += OnMessageReceivedAsync;
             _discord.MessageUpdated += OnMessageUpdateAsync;
-            _discord.Ready += OnReadyAsync;
+            _discord.Connected += OnConnectAsync;
         }
 
-        private async Task OnReadyAsync()
+        private async Task OnConnectAsync()
         {
             var col = _database.GetCollection<Character>("Characters");
-            var chars = col.Find(x => x.AbilityScores.Length == 5);
+            var chars = col.FindAll();
+            var filter = chars.Where(x=>x.AbilityScores.Length < 6);
             foreach (var x in chars){
-                var s = x.AbilityScores;
-                Array.Resize<AbScore>(ref s,6);
-                s[6] = new AbScore();
-                x.AbilityScores = s;
-                col.Update(x);
+                var c = new Character(){
+                  Abilities = x.Abilities,
+                  Class = x.Class,
+                  CodeblockMode = true,
+                  Color = x.Color,
+                  Health = x.Health,
+                  Image = x.Image,
+                  Inventory = x.Inventory,
+                  Money = x.Money,
+                  Name = x.Name,
+                  Owner = x.Owner,
+                  Race = x.Race,
+                  Skills = x.Skills,
+                  Traits =x.Traits,
+                  AbilityScores = new AbScore[6],
+                  ID = x.ID
+                };
+                c.AbilityScores[0] = x.AbilityScores[0];
+                c.AbilityScores[1] = x.AbilityScores[1];
+                c.AbilityScores[2] = x.AbilityScores[2];
+                c.AbilityScores[3] = x.AbilityScores[3];
+                c.AbilityScores[4] = x.AbilityScores[4];
+                c.AbilityScores[5] = new AbScore();
+                col.Update(c);
             }
+            await Task.Delay(TimeSpan.FromMilliseconds(1));
         }
 
         private async Task OnMessageUpdateAsync(Cacheable<IMessage, ulong> Original, SocketMessage msg, ISocketMessageChannel Channel)

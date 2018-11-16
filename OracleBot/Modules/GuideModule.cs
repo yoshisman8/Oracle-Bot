@@ -17,7 +17,6 @@ namespace OracleBot.Modules
     {
            [Command("Help", RunMode = RunMode.Async)]
            public async Task Help(){
-               
            }
     }
     public class CharacterGuide{
@@ -27,7 +26,7 @@ namespace OracleBot.Modules
                     .WithTitle("Character Creation Guide")
                     .WithColor(Color.Orange)
                     .WithTimestamp(DateTime.Now)
-                    .WithDescription("In order to get started with making a character. We first need to give it a name. What's the name of your character? Reply with your character's name (You can always change this later with `.SetName Character_Name`")
+                    .WithDescription("In order to get started with making a character. We first need to give it a name. Use `.NewChar Your_Character's_Full_Name_Here` to create your character! Feel free to use spaces, no need to wrap the name in quotation marks.\nOnce you're done, click the ▶ reaction to move to the next step.")
                     .Build(),
                 new EmbedBuilder()
                     .WithTitle("Character Creation Guide: Ability Scores")
@@ -40,7 +39,7 @@ namespace OracleBot.Modules
                     .AddInlineField("Intelligence (INT)","This score tracks your character's overall memory and information retention capabilities. It is tied to any Knowledge skill checks as well as checks like SpellCraft or Hacking.")
                     .AddInlineField("Wisdom (WIS)","This score tracks your character's awareness of their surroundings and their mental resilience. It is tied to your Will saving throws as well as skillchecks that involve awareness of your environment like Sense Motive, Survival or Perception.")
                     .AddInlineField("Charisma (CHA)","This score tracks your character's overall ability to project their will and personality onto the world. Although it encompases most Social skill checks such as Bluff, Diplomacy and Intimidation, It is also used whenever you wish to exhert control over forces that you don't exactly comprehend (Such as a sorcerer commanding the magic within them to do something despite not being studied).")
-                    .AddField("Picking your Scores","When it comes to picking ability scores, 10 is considered the absolute average. Ehile Values such as 7 or 8 Are often considered the lowest your character should go, indicating a clear handicap on that aspect of them. While values like 14 to 16 are seen as clear advantages. Ideally, you don't want to have too many high scores without at least one or two scores to 'balance' yourself out.\nHowever you can also let the die decide your scores for you. Here are 6 random numbers that you can use for your ability scores: "+generatescores()+". Once you've decided what scores you wish to have, reply with the 6 values in order presented in the following manner: `11, 12, 13, 14, 15, 16`. All separated by a comma. You can always change these scores with `.SetScore ScoreAbreviation Value`")
+                    .AddField("Picking your Scores","When it comes to picking ability scores, 10 is considered the absolute average. Ehile Values such as 7 or 8 Are often considered the lowest your character should go, indicating a clear handicap on that aspect of them. While values like 14 to 16 are seen as clear advantages. Ideally, you don't want to have too many high scores without at least one or two scores to 'balance' yourself out.\nHowever you can also let the die decide your scores for you. Here are 6 random numbers that you can use for your ability scores: "+generatescores()+". Once you've decided what scores you wish to have, use the command `.SetScore ScoreAbreviation Value` to set each one of your ability scores. \nOnce you're done, click the ▶ reaction to move to the next step.")
                     .Build(),
                 new EmbedBuilder()
                     .WithTitle("Character Creation Guide: Traits, Feats and Abilities")
