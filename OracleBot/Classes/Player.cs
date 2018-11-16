@@ -13,7 +13,6 @@ namespace OracleBot.Classes
         public ulong DiscordId {get;set;}
         [BsonRef("Characters")]
         public Character Character {get;set;}
-        public List<Item> ItemVault {get;set;} = new List<Item>();
 
         public Embed BuildProfile(SocketCommandContext Context, LiteDatabase Database){
             var user = Context.Client.GetUser(DiscordId);
@@ -30,11 +29,6 @@ namespace OracleBot.Classes
             if (sb.Length == 0) sb.Append(user.Username+" doesn't have any characters.");
             embed.AddField("Characters",sb.ToString(),true);
             sb.Clear();
-            foreach(var x in ItemVault){
-                sb.AppendLine("• "+x.Name);
-            }
-            if (sb.Length == 0) sb.Append(user.Username+" doesn't have any Items in their Vault.");
-            embed.AddField("Item Vault",sb.ToString(),true);
             return embed.Build();
         }
     }

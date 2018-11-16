@@ -46,10 +46,10 @@ namespace OracleBot.Modules
                 await Context.Message.DeleteAsync();
             }
         }
-        [Command("SetEScore")]
+        [Command("SetBonusScore"), Alias("ExtraAbilityScore","SetExtraScore","AbilityImprovement")]
         [Summary("Set your locked character's extra ability score bonus. Usage: `.SetEScore AbScore Value Proficiency`.\n"+
             "Valid Scores are `STR/DEX/CON/INT/WIS` and Proficiencies are `Untrained/Trained/Expert`. All case sensitive.")]        
-        public async Task SetEAbScore(AbilityShort Score, int Value, Proficiency Prof = Proficiency.Untrained){
+        public async Task SetEAbScore(AbilityShort Score, int Value){
             Value = Math.Abs(Value);
             if (Value > 30){
                 await ReplyAndDeleteAsync(Context.User.Mention+", You can't set ability scores higher than 30!", timeout: TimeSpan.FromSeconds(5));
@@ -71,10 +71,9 @@ namespace OracleBot.Modules
             else{
                 var chr = plr.Character;
                 chr.AbilityScores[(int)Score].Extra = Value;
-                chr.AbilityScores[(int)Score].Trained = Prof;
                 if (Score == AbilityShort.CON) chr.Fullheal();
                 col.Update(chr);
-                await ReplyAsync(Context.User.Mention+", You set **"+chr.Name+"**'s bonus "+Score+" value to "+Value+" ["+Prof+"]");
+                await ReplyAsync(Context.User.Mention+", You set **"+chr.Name+"**'s "+Score+" score increase to "+Value+".");
                 await Context.Message.DeleteAsync();
             }
         }
@@ -100,11 +99,6 @@ namespace OracleBot.Modules
                     chr.Image = Context.Message.Attachments.First().Url;
                     await ReplyAsync(Context.User.Mention+", You set **"+chr.Name+"**'s thumbnail image.");                    
                 }
-                else if (ImageURL == "https://media.discordapp.net/attachments/357593658586955776/454118701592215554/user-black-close-up-shape.png"){
-                    chr.Image = ImageURL;
-                    await ReplyAsync(Context.User.Mention+", You set **"+chr.Name+"**'s thumbnail image back to its default image.");
-                    await Context.Message.DeleteAsync();
-                }
                 else {
                     chr.Image = ImageURL;
                     await ReplyAsync(Context.User.Mention+", You set **"+chr.Name+"**'s thumbnail image.");
@@ -115,9 +109,9 @@ namespace OracleBot.Modules
         }
 
         [Command("NewSkill"), Alias("AddSkill")]
-        [Summary("Adds or Updates a skill to your locked character. Usage: `.NewSkill Name AbilityScore Ranks`\n"+
-            "Valid Scores are `STR/DEX/CON/INT/WIS/CHA`.")]
-        public async Task NewSkill(string Name, AbilityShort Score, int Ranks = 0){
+        [Summary("Adds or Updates a skill to your locked character. Usage: `.NewSkill Name AbilityScore ClassSkill?`\n"+
+            "Valid Scores are `STR/DEX/CON/INT/WIS/CHA`. ClassSkill is either Yes or No, Defaults to No.")]
+        public async Task NewSkill(string Name, AbilityShort Score, BoolEnum ClassSkill){
             var players = Database.GetCollection<player>("Players");
             var col = Database.GetCollection<Character>("Characters");
             if (!players.Exists(x => x.DiscordId == Context.User.Id)){
@@ -137,17 +131,20 @@ namespace OracleBot.Modules
                     var index = chr.Skills.FindIndex(x => x.Name.ToLower() == Name.ToLower());
                     var skill = chr.Skills.ElementAt(index);
                     skill.Ability = Score;
+                    skill.ClassSkill = ((int)ClassSkill == 1) ? true : false;
+                    string status = skill.ClassSkill ? "and is now set as a **Class Skill**." : ".";
                     chr.Skills[index] = skill;
-                    await ReplyAsync(Context.User.Mention+", you updated your character's **"+skill.Name+"** skill to use **"+Score+"**.");
+                    await ReplyAsync(Context.User.Mention+", you updated your character's **"+skill.Name+"** skill to use **"+Score+"**"+status);
                 }
                 else{
                     var skill = new Skill(){
                         Name = Name,
                         Ability = Score,
-                        Ranks = Ranks
-                    };
+                        ClassSkill = ((int)ClassSkill == 1) ? true : false
+                    }; 
+                    string status = skill.ClassSkill ? "and is now set as a **Class Skill**." : ".";
                     chr.Skills.Add(skill);
-                    await ReplyAsync(Context.User.Mention+", you added the following skill to your character: **"+skill.Name+"** that uses **"+Score+"** and they have **"+Ranks+"** ranks on said skill.");
+                    await ReplyAsync(Context.User.Mention+", you added the following skill to your character: **"+skill.Name+"** that uses **"+Score+"**"+status);
                 }
                 col.Update(chr);
                 await Context.Message.DeleteAsync();
@@ -192,8 +189,8 @@ namespace OracleBot.Modules
                 }
             }
         }
-        [Command("RankUp"),Alias("RU")]
-        [Summary("Adds ranks to a skill you know. Usage: `.RankUp SkillName Ranks.`")]
+        [Command("SetRanks"),Alias("Ranks","SetRank")]
+        [Summary("Sets the ranks to of a skill your locked character know. Usage: `.SetRank ranks.`")]
         public async Task RankUp(string Name, int Ranks){
             var players = Database.GetCollection<player>("Players");
             var col = Database.GetCollection<Character>("Characters");
@@ -225,59 +222,10 @@ namespace OracleBot.Modules
                 else{
                     var skill = chr.Skills.Find(x => x.Name.ToLower().StartsWith(Name.ToLower()));
                     var i = chr.Skills.FindIndex(x => x.Name.ToLower().StartsWith(Name.ToLower()));
-                    chr.Skills[i].Ranks += Ranks;
+                    chr.Skills[i].Ranks = Ranks;
                     col.Update(chr);
-                    await ReplyAsync(Context.User.Mention+", Increased "+chr.Name+"'s skill ranks in **"+skill.Name+"** by "+Ranks+".");
+                    await ReplyAsync(Context.User.Mention+", Set "+chr.Name+"'s skill ranks in **"+skill.Name+"** to "+Ranks+".");
                     await Context.Message.DeleteAsync();                    
-                }
-            }
-        }
-        [Command("RankDown"),Alias("RD")]
-        [Summary("Removes ranks to a skill you know. Usage: `.RankUp SkillName Ranks.`")]
-        public async Task RankDown(string Name, int Ranks){
-            var players = Database.GetCollection<player>("Players");
-            var col = Database.GetCollection<Character>("Characters");
-            if (!players.Exists(x => x.DiscordId == Context.User.Id)){
-                await ReplyAndDeleteAsync(Context.User.Mention+", you've never made any character so I can't find your character! Please make one with `.newchar Name`!", timeout: TimeSpan.FromSeconds(5));                    return;
-            }
-            var plr = players
-                .Include(x => x.Character)
-                .Include(x => x.Character.AbilityScores) .Include(x => x.Character.Skills)
-                .FindOne(x => x.DiscordId == Context.User.Id);
-            if (plr.Character == null){
-                await ReplyAndDeleteAsync(Context.User.Mention+", you're not locked to a character! Use `.lock Character_Name` to lock into a character.",false,null,TimeSpan.FromSeconds(5));
-                return;
-            }
-            else{
-                var chr = plr.Character;
-                if (!chr.Skills.Exists(x => x.Name.ToLower().StartsWith(Name.ToLower()))){
-                    await ReplyAndDeleteAsync(Context.User.Mention+", "+chr.Name+" doesn't have a skill that starts with "+Name+".", timeout: TimeSpan.FromSeconds(5));
-                    return;
-                }
-                if (chr.Skills.Where(x => x.Name.ToLower().StartsWith(Name.ToLower())).Count() > 1 && !chr.Skills.Exists(x => x.Name.ToLower() == Name.ToLower())){
-                    var result = chr.Skills.Where(x => x.Name.ToLower().StartsWith(Name.ToLower()));
-                    var sb = new StringBuilder().Append(Context.User.Mention+", "+chr.Name+" has more than " + result.Count()+ "skills that starts with the word **"+Name+"**. Please specify which one from this list is the one you want to remove by using said skill's full name inside quotation marks: ");
-                    foreach (var x in result){
-                        sb.Append("`"+x.Name+"`, ");
-                    }
-                    await ReplyAndDeleteAsync(sb.ToString().Substring(0,sb.Length-2), timeout: TimeSpan.FromSeconds(10));
-                }
-                else{
-                    var skill = chr.Skills.Find(x => x.Name.ToLower().StartsWith(Name.ToLower()));
-                    var i = chr.Skills.FindIndex(x => x.Name.ToLower().StartsWith(Name.ToLower()));
-                    
-                    if((chr.Skills[i].Ranks - Ranks)<0){
-                        chr.Skills[i].Ranks = 0;
-                        col.Update(chr);
-                        await ReplyAsync(Context.User.Mention+", Reduced "+chr.Name+"'s skill ranks in **"+skill.Name+"** to 0.");
-                        await Context.Message.DeleteAsync(); 
-                    }
-                    else {
-                        chr.Skills[i].Ranks -= Ranks;
-                        col.Update(chr);
-                        await ReplyAsync(Context.User.Mention+", Decreased "+chr.Name+"'s skill ranks in **"+skill.Name+"** by "+Ranks+".");
-                        await Context.Message.DeleteAsync();
-                    }                     
                 }
             }
         }
@@ -513,7 +461,7 @@ namespace OracleBot.Modules
                 await Context.Message.DeleteAsync();
             }
         }
-        [Command("SetHP")]
+        [Command("SetEHP")]
         [Summary("Sets the your character's extra HP (adds on top of your CON-based HP). Usage: `.SetHP HealthValue`.")]
         public async Task SetHP([Remainder]int HP){
             HP = Math.Abs(HP);
@@ -535,6 +483,31 @@ namespace OracleBot.Modules
                 chr.Health.Extra = HP;
                 col.Update(chr);
                 await ReplyAsync(Context.User.Mention+", You set **"+chr.Name+"**'s Extra HP to "+ HP +".");
+                await Context.Message.DeleteAsync();
+            }
+        }
+        [Command("SetBaseHP"), Alias("SetHP")]
+        [Summary("Sets the your character's base HP (This is multiplied by your level). Usage: `.SetHP HealthValue`.")]
+        public async Task SetBaseHP([Remainder]int HP){
+            HP = Math.Abs(HP);
+            var players = Database.GetCollection<player>("Players");
+            var col = Database.GetCollection<Character>("Characters");
+            if (!players.Exists(x => x.DiscordId == Context.User.Id)){
+                await ReplyAndDeleteAsync(Context.User.Mention+", you've never made any character so I can't find your character! Please make one with `.newchar Name`!", timeout: TimeSpan.FromSeconds(5));                    return;
+            }
+            var plr = players
+                .Include(x => x.Character)
+                .Include(x => x.Character.AbilityScores) .Include(x => x.Character.Skills)
+                .FindOne(x => x.DiscordId == Context.User.Id);
+            if (plr.Character == null){
+                await ReplyAndDeleteAsync(Context.User.Mention+", you're not locked to a character! Use `.lock Character_Name` to lock into a character.",false,null,TimeSpan.FromSeconds(5));
+                return;
+            }
+            else{
+                var chr = plr.Character;
+                chr.Health.Base = HP;
+                col.Update(chr);
+                await ReplyAsync(Context.User.Mention+", You set **"+chr.Name+"**'s Base HP to "+ HP +".");
                 await Context.Message.DeleteAsync();
             }
         }
@@ -618,6 +591,70 @@ namespace OracleBot.Modules
                     await ReplyAsync(Context.User.Mention+", Enabled Code Block mode for "+chr.Name+"'s sheet.");
                 }
                 col.Update(chr);
+                await Context.Message.DeleteAsync();
+            }
+        }
+        [Command("ToggleSave")]
+        [Summary("Toggles Good or Poor Save prorgession, this affects how quickly it progresses in terms of bonus from your character level.\n"+
+            "Usage: `.ToggleSave Savingthrow`\nValid Saving throws are: Fortiude, Will and Reflex (You must use the full name)")]
+        public async Task ToggleSave(SavingThrows Save){
+            var players = Database.GetCollection<player>("Players");
+            var col = Database.GetCollection<Character>("Characters");
+            if (!players.Exists(x => x.DiscordId == Context.User.Id)){
+                await ReplyAndDeleteAsync(Context.User.Mention+", you've never made any character so I can't find your character! Please make one with `.newchar Name`!", timeout: TimeSpan.FromSeconds(5));                    return;
+            }
+            var plr = players
+                .Include(x => x.Character)
+                .Include(x => x.Character.AbilityScores) .Include(x => x.Character.Skills)
+                .FindOne(x => x.DiscordId == Context.User.Id);
+            if (plr.Character == null){
+                await ReplyAndDeleteAsync(Context.User.Mention+", you're not locked to a character! Use `.lock Character_Name` to lock into a character.",false,null,TimeSpan.FromSeconds(5));
+                return;
+            }
+            else{
+                var chr = plr.Character;
+                string status = "";
+                switch (Save){
+                    case SavingThrows.Fortitude:
+                        chr.Health.Fortitude = !chr.Health.Fortitude;
+                        status = chr.Health.Fortitude ? "Good" : "Poor";
+                        break;
+                    case SavingThrows.Reflex:
+                        chr.Health.Reflex = !chr.Health.Reflex;
+                        status = chr.Health.Reflex ? "Good" : "Poor";
+                        break;
+                    case SavingThrows.Will:
+                        chr.Health.Will = !chr.Health.Will;
+                        status = chr.Health.Will ? "Good" : "Poor";
+                        break;
+                }
+                col.Update(chr);
+                await ReplyAsync(Context.User.Mention+", "+chr.Name+"'s "+Save+" saving progression is now **"+status+"**.");
+                await Context.Message.DeleteAsync();
+            }
+        }
+        [Command("ToggleBaB")]
+        [Summary("Toggles your locked character's Base Attack Bonus between Full (BaB = Level) or 3/4 (BaB = 3/4 your level). Usage: `.ToggleBaB`")]
+        public async Task ToggleBaB(){
+            var players = Database.GetCollection<player>("Players");
+            var col = Database.GetCollection<Character>("Characters");
+            if (!players.Exists(x => x.DiscordId == Context.User.Id)){
+                await ReplyAndDeleteAsync(Context.User.Mention+", you've never made any character so I can't find your character! Please make one with `.newchar Name`!", timeout: TimeSpan.FromSeconds(5));                    return;
+            }
+            var plr = players
+                .Include(x => x.Character)
+                .Include(x => x.Character.AbilityScores) .Include(x => x.Character.Skills)
+                .FindOne(x => x.DiscordId == Context.User.Id);
+            if (plr.Character == null){
+                await ReplyAndDeleteAsync(Context.User.Mention+", you're not locked to a character! Use `.lock Character_Name` to lock into a character.",false,null,TimeSpan.FromSeconds(5));
+                return;
+            }
+            else{
+                var chr = plr.Character;
+                chr.Health.FullBaB = !chr.Health.FullBaB;
+                string status = chr.Health.FullBaB ? "Full" : "3/4";
+                col.Update(chr);
+                await ReplyAsync(Context.User.Mention+", "+chr.Name+"'s now has **"+status+"** Base attack Bonus progression.");
                 await Context.Message.DeleteAsync();
             }
         }

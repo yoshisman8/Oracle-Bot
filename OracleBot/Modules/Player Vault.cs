@@ -82,7 +82,6 @@ namespace OracleBot.Modules
                     });
                 }
                 var LockFile = plr.Include(x => x.Character)
-                    .Include(x => x.ItemVault)
                     .FindOne(x => x.DiscordId == Context.User.Id); 
                 await ReplyAsync("",false,LockFile.BuildProfile(Context,Database));
                 await Context.Message.DeleteAsync();
@@ -95,7 +94,7 @@ namespace OracleBot.Modules
                         Character = null
                     });
                 }
-                var LockFile = plr.Include(x => x.Character).Include(x=> x.ItemVault).FindOne(x => x.DiscordId == User.Id); 
+                var LockFile = plr.Include(x => x.Character).FindOne(x => x.DiscordId == User.Id); 
                 await ReplyAsync("",false,LockFile.BuildProfile(Context,Database));
                 await Context.Message.DeleteAsync();
             }

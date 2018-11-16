@@ -21,7 +21,7 @@ namespace OracleBot.Modules
 
         [Command("NewItem")]
         [Summary("Makes a new item and adds it to your local ItemVault. Usage: `.NewItem Name Description`. \n**For DMs**: add 'Global' after the description to add the item to the global Item Database.")]
-        public async Task NewItem(string Name, string Description, ItemLocation Global = ItemLocation.Vault){
+        public async Task NewItem(string Name, string Description){
             var players = Database.GetCollection<player>("Players");
             var col = Database.GetCollection<Character>("Characters");
             var ItemDb = Database.GetCollection<Item>("Items");
@@ -37,51 +37,13 @@ namespace OracleBot.Modules
             var plr = players
                 .Include(x => x.Character)
                 .Include(x => x.Character.AbilityScores) .Include(x => x.Character.Skills)
-                .Include(x => x.ItemVault)
                 .FindOne(x => x.DiscordId == Context.User.Id);
-            if (Global == ItemLocation.Global && !User.GuildPermissions.ManageMessages){
-                await ReplyAndDeleteAsync(User.Mention+", You can't add items to the global database! Talk to your GM to add this item there.",timeout: TimeSpan.FromSeconds(5));
-                return;
-            }
-
-            if (Global == ItemLocation.Vault && plr.ItemVault.Exists(x => x.Name.ToLower() == Name.ToLower())){
-                var item = plr.ItemVault.Find(x =>x.Name.ToLower() == Name.ToLower());
-                var index = plr.ItemVault.IndexOf(item);
-                item.Description = Description;
-                plr.ItemVault[index] = item;
-                players.Update(plr);
-                await ReplyAsync(Context.User.Mention+", Updated the item **"+item.Name+"** on your Item Vault.");
-            }
-
-            else if (Global == ItemLocation.Global && ItemDb.Exists(x =>x.Name == Name.ToLower()) && User.GuildPermissions.ManageMessages){
-                var item = ItemDb.FindOne(x =>x.Name == Name.ToLower());
-                item.Description = Description;
-                ItemDb.Update(item);
-                await ReplyAsync(Context.User.Mention+", Updated the item **"+item.Name+"** on The global Item Database.");
-            }
-            else if(Global == ItemLocation.Vault && !plr.ItemVault.Exists(x =>x.Name.ToLower() == Name.ToLower())){
-                var item = new Item(){
-                    Id = -1,
-                    Name = Name,
-                    Description = Description
-                };
-                plr.ItemVault.Add(item);
-                players.Update(plr);
-                await ReplyAsync(Context.User.Mention+", Added the item **"+item.Name+"** to your Item Vault.");
-            }
-            else if(Global == ItemLocation.Global && !ItemDb.Exists(x =>x.Name == Name.ToLower()) && User.GuildPermissions.ManageMessages){
-                var item = new Item(){
-                    Name = Name,
-                    Description = Description
-                };
-                ItemDb.Insert(item);
-                await ReplyAsync(Context.User.Mention+", Added the item **"+item.Name+"** to the global database.");
-            }
+            
             await Context.Message.DeleteAsync();
         }
         [Command("Use"),Alias("Consume")]
         [Summary("Use an item from your locked character's inventory. Usage: `.Use ItemName Amount`. Amount defaults to 1")]
-        public async Task Use(string Name, int Amount = 0){
+        public async Task Use(string Name, int Amount = 1){
             Amount = Math.Abs(Amount);
             var players = Database.GetCollection<player>("Players");
             var col = Database.GetCollection<Character>("Characters");
@@ -104,13 +66,12 @@ namespace OracleBot.Modules
                 return;
             }
             var chr = plr.Character;
-            chr.BuildInventory(Database,plr);
-            var Query = chr.Inventory.Where(x=>x.Item.Name.ToLower().StartsWith(Name.ToLower()));
-            if (Query.Count() > 1 && !Query.ToList().Exists(x =>x.Item.Name.ToLower() == Name.ToLower())){
+            var Query = chr.Inventory.Where(x=>x.Name.ToLower().StartsWith(Name.ToLower()));
+            if (Query.Count() > 1 && !Query.ToList().Exists(x =>x.Name.ToLower() == Name.ToLower())){
                 string msg = Context.User.Mention+", Multiple items were found! Please specify which one of the following items is the one you're looking for: ";
                 foreach (var q in Query)
                 {
-                    msg += "`" + q.Item.Name + "`, ";
+                    msg += "`" + q.Name + "`, ";
                 }
                 await ReplyAndDeleteAsync(msg.Substring(0,msg.Length-2), timeout: TimeSpan.FromSeconds(10));
                 return;
@@ -119,39 +80,29 @@ namespace OracleBot.Modules
                     await ReplyAndDeleteAsync(Context.User.Mention+", There isn't an item in the database whose name starts with '"+Name+"'.",timeout: TimeSpan.FromSeconds(5));
                     return;
                 }
-            else if (Query.Count() == 1 || Query.ToList().Exists(x=>x.Item.Name.ToLower() == Name.ToLower())){
+            else if (Query.Count() == 1 || Query.ToList().Exists(x=>x.Name.ToLower() == Name.ToLower())){
                     var item = Query.First();
-                    if(Amount == 0) {
-                        var msg2 = Context.User.Mention+", "+chr.Name+" used their **"+item.Item.Name+"**.";
-                        if (item.Item.Macro != ""){
-                                msg2 += "\nRoll: **"+MacroProcessor.MacroRoll(item.Item.Macro,chr).Roll().Value+"**.";
-                            }
+                    if(item.Type != ItemType.Miscellanous) {
+                        var msg2 = Context.User.Mention+", "+chr.Name+" used their **"+item.Name+"**.";
                         await ReplyAsync(msg2);
                         await Context.Message.DeleteAsync();
                         return;
                     }
-
-                    if (item.Quantity - Amount < 0){
-                        await ReplyAndDeleteAsync(Context.User.Mention+", "+chr.Name+" doesn't have that many "+item.Item.Name+"(s).",timeout: TimeSpan.FromSeconds(5));
-                        return;
-                    }
-                    else{
+                    else if (item.Type == ItemType.Consumable){
+                        if (item.Quantity - Amount < 0){
+                            await ReplyAndDeleteAsync(Context.User.Mention+", "+chr.Name+" doesn't have that many "+item.Name+"(s).",timeout: TimeSpan.FromSeconds(5));
+                            return;
+                        }
                         var index = chr.Inventory.IndexOf(item);
                         chr.Inventory[index].Quantity -= Amount;
-                        if (chr.Inventory[index].Quantity == 0){
-                            chr.Inventory.RemoveAll(x => x.Item == item.Item);
-                            string msg1 = Context.User.Mention+", "+chr.Name+" used up the remaining "+ Amount +" of their **"+item.Item.Name+"**.";
-                            if (item.Item.Macro != ""){
-                                msg1 += "\nRoll: **"+MacroProcessor.MacroRoll(item.Item.Macro,chr).Roll().Value+"**.";
-                            }
+                        if (chr.Inventory[index].Quantity == 0)
+                        {
+                            string msg1 = Context.User.Mention+", "+chr.Name+" used up the remaining "+ Amount +" of their **"+item.Name+"**.";
                             await ReplyAsync(msg1);
                         }
-                        string msg = Context.User.Mention+", "+chr.Name+" used up "+ Amount +" of their **"+item.Item.Name+"**.";
-                        if (item.Item.Macro != ""){
-                                msg += "\nRoll: **"+MacroProcessor.MacroRoll(item.Item.Macro,chr).Roll().Value+"**.";
-                            }
-                        else await ReplyAsync(msg);
+                        await ReplyAsync(Context.User.Mention+", "+chr.Name+" used up "+ Amount +" of their **"+item.Name+"**.");
                     }
+                    
                     col.Update(chr);
                 }
         }

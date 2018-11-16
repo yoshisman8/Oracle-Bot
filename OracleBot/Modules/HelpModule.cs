@@ -17,7 +17,7 @@ namespace OracleBot.Modules
             _config = config;
         }
 
-        [Command("help")]
+        [Command("Commands")]
         public async Task HelpAsync()
         {
             string prefix = _config["prefix"];
@@ -52,7 +52,7 @@ namespace OracleBot.Modules
             await Context.Message.DeleteAsync();
         }
 
-        [Command("help")]
+        [Command("Commands")]
         public async Task HelpAsync(string command)
         {
             var result = _service.Search(Context, command);

@@ -2,7 +2,9 @@
 using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using System;
+using OracleBot.Classes;
 using LiteDB;
 using Discord;
 using System.Linq;
@@ -34,6 +36,20 @@ namespace OracleBot.Services
 
             _discord.MessageReceived += OnMessageReceivedAsync;
             _discord.MessageUpdated += OnMessageUpdateAsync;
+            _discord.Ready += OnReadyAsync;
+        }
+
+        private async Task OnReadyAsync()
+        {
+            var col = _database.GetCollection<Character>("Characters");
+            var chars = col.Find(x => x.AbilityScores.Length == 5);
+            foreach (var x in chars){
+                var s = x.AbilityScores;
+                Array.Resize<AbScore>(ref s,6);
+                s[6] = new AbScore();
+                x.AbilityScores = s;
+                col.Update(x);
+            }
         }
 
         private async Task OnMessageUpdateAsync(Cacheable<IMessage, ulong> Original, SocketMessage msg, ISocketMessageChannel Channel)

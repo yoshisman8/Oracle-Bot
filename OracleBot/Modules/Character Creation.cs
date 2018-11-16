@@ -28,9 +28,22 @@ namespace OracleBot.Modules
             var character = new Character();
             character.Name = Name;
             character.Owner = Context.User.Id;
-            for (int x = 0; x <5;x++){
+            for (int x = 0; x <6;x++){
                 character.AbilityScores[x] = new AbScore();
             }
+            character.Skills.Add(new Skill(){Name = "Acrobatics",Ability = AbilityShort.DEX});
+            character.Skills.Add(new Skill(){Name = "Bluff",Ability = AbilityShort.CHA});
+            character.Skills.Add(new Skill(){Name = "Climb",Ability = AbilityShort.STR});
+            character.Skills.Add(new Skill(){Name = "Diplomacy",Ability = AbilityShort.CHA});
+            character.Skills.Add(new Skill(){Name = "Disable Device",Ability = AbilityShort.DEX});
+            character.Skills.Add(new Skill(){Name = "Intimidate",Ability = AbilityShort.CHA});
+            character.Skills.Add(new Skill(){Name = "Perception",Ability = AbilityShort.WIS});
+            character.Skills.Add(new Skill(){Name = "Sense Motive",Ability = AbilityShort.WIS});
+            character.Skills.Add(new Skill(){Name = "Sleight of Hand",Ability = AbilityShort.DEX});
+            character.Skills.Add(new Skill(){Name = "Stealth",Ability = AbilityShort.DEX});
+            character.Skills.Add(new Skill(){Name = "Survival",Ability = AbilityShort.WIS});
+            character.Skills.Add(new Skill(){Name = "Swim",Ability = AbilityShort.STR});
+
             col.Insert(character);
             character = col.FindOne(x => x.Name == character.Name.ToLower());            
             col.EnsureIndex("Name","LOWER($.Name)");
@@ -47,7 +60,7 @@ namespace OracleBot.Modules
                 plr.Character = character;
                 players.Update(plr);
             }
-            await ReplyAsync(Context.User.Mention+", Character **"+character.Name+"** was created successfuly! Make sure to consult the help files on `.help` to see all the comands you can do complete the set-up.");
+            await ReplyAsync(Context.User.Mention+", Character **"+character.Name+"** was created successfuly! Make sure to consult the help files on `.help` to see all the Guides you can do complete the set-up.");
             await Context.Message.DeleteAsync();
         }
 
@@ -130,8 +143,8 @@ namespace OracleBot.Modules
                 }
             }
         }
-        [Command("Traits"), Alias("Trait")]
-        [Summary("Shows the Traits of someone else's character in detail. Usage: `.Trait Character_Name`. Use this command without a name to see your locked character's traits.")]
+        [Command("Traits"), Alias("Trait","Feats","Feat")]
+        [Summary("Shows the Traits or Feats of someone else's character in detail. Usage: `.Trait Character_Name`. Use this command without a name to see your locked character's traits.")]
         public async Task getskills([Remainder] string Name = ""){
             var players = Database.GetCollection<player>("Players");
             var col = Database.GetCollection<Character>("Characters");
@@ -151,10 +164,11 @@ namespace OracleBot.Modules
                 else{
                     var chr = plr.Character;
                     var embed = new EmbedBuilder()
-                        .WithTitle(chr.Name+"'s Traits");
+                        .WithTitle(chr.Name+"'s Traits and Feats")
+                        .WithColor(new Color(chr.Color[0],chr.Color[1],chr.Color[2]));
                     foreach(var x in chr.Traits){
                         if (MacroProcessor.IsReference(x.Description)){
-                            embed.AddField(x.Name,MacroProcessor.MacroReference(x.Description,chr));
+                            embed.AddField(x.Name,MacroProcessor.ParseReference(x.Description,chr));
                         }
                         else embed.AddField(x.Name,x.Description);
                     }
@@ -180,10 +194,11 @@ namespace OracleBot.Modules
                 else if (Query.Count() == 1 || Query.ToList().Exists(x => x.Name.ToLower() == Name.ToLower())){
                     var chr = Query.FirstOrDefault();
                     var embed = new EmbedBuilder()
-                        .WithTitle(chr.Name+"'s Traits");
+                        .WithTitle(chr.Name+"'s Traits and Feats")
+                        .WithColor(new Color(chr.Color[0],chr.Color[1],chr.Color[2]));
                     foreach(var x in chr.Traits){
                         if (MacroProcessor.IsReference(x.Description)){
-                            embed.AddField(x.Name,MacroProcessor.MacroReference(x.Description,chr));
+                            embed.AddField(x.Name,MacroProcessor.ParseReference(x.Description,chr));
                         }
                         else embed.AddField(x.Name,x.Description);
                     }
@@ -213,10 +228,11 @@ namespace OracleBot.Modules
                 else{
                     var chr = plr.Character;
                     var embed = new EmbedBuilder()
-                        .WithTitle(chr.Name+"'s Abilities");
+                        .WithTitle(chr.Name+"'s Abilities")
+                        .WithColor(new Color(chr.Color[0],chr.Color[1],chr.Color[2]));
                     foreach(var x in chr.Abilities){
                         if (MacroProcessor.IsReference(x.Description)){
-                            embed.AddField(x.Name,MacroProcessor.MacroReference(x.Description,chr));
+                            embed.AddField(x.Name,MacroProcessor.ParseReference(x.Description,chr));
                         }
                         else embed.AddField(x.Name,x.Description);
                     }
@@ -242,10 +258,11 @@ namespace OracleBot.Modules
                 else if (Query.Count() == 1 || Query.ToList().Exists(x => x.Name.ToLower() == Name.ToLower())){
                     var chr = Query.FirstOrDefault();
                     var embed = new EmbedBuilder()
-                        .WithTitle(chr.Name+"'s Abilities");
+                        .WithTitle(chr.Name+"'s Abilities")
+                        .WithColor(new Color(chr.Color[0],chr.Color[1],chr.Color[2]));
                     foreach(var x in chr.Abilities){
                         if (MacroProcessor.IsReference(x.Description)){
-                            embed.AddField(x.Name,MacroProcessor.MacroReference(x.Description,chr));
+                            embed.AddField(x.Name,MacroProcessor.ParseReference(x.Description,chr));
                         }
                         else embed.AddField(x.Name,x.Description);
                     }
@@ -287,6 +304,70 @@ namespace OracleBot.Modules
             }
             await ReplyAsync("",false,embed.Build());
             await Context.Message.DeleteAsync();
+        }
+        [Command("Skills")]
+        [Summary("Show all the skills a character has. Usage: `.Skills Character_Name`. Use this command without a name to see your locked character's Abilities.")]
+        public async Task ShowSkills([Remainder] string Name = ""){
+            var players = Database.GetCollection<player>("Players");
+            var col = Database.GetCollection<Character>("Characters");
+            if (Name == "" || Name == null){
+                if (!players.Exists(x => x.DiscordId == Context.User.Id)){
+                    await ReplyAndDeleteAsync(Context.User.Mention+", you've never made any character so I can't find your character! Please make one with `.newchar Name`!", timeout: TimeSpan.FromSeconds(5));
+                    return;
+                }
+                var plr = players
+                    .Include(x => x.Character)
+                    .Include(x => x.Character.AbilityScores) .Include(x => x.Character.Skills)
+                    .FindOne(x => x.DiscordId == Context.User.Id);
+                if (plr.Character == null){
+                    await ReplyAndDeleteAsync(Context.User.Mention+", you're not locked to a character! Use `.lock Character_Name` to lock into a character.",false,null,TimeSpan.FromSeconds(5));
+                    return;
+                }
+                else{
+                    var chr = plr.Character;
+                    var embed = new EmbedBuilder()
+                        .WithTitle(chr.Name+"'s Skills")
+                        .WithColor(new Color(chr.Color[0],chr.Color[1],chr.Color[2]));
+                    var sb = new StringBuilder();
+                    foreach(var x in chr.Skills.OrderBy(x => x.Name))
+                    {
+                        sb.AppendLine("• "+x.Name+"("+x.Ability+") "+"["+(x.Ranks+chr.AbilityScores[(int)x.Ability].GetIntMod())+"]");
+                    }
+                    embed.Description = sb.ToString();
+                    await ReplyAsync("",false,embed.Build());
+                    await Context.Message.DeleteAsync();
+                }
+            }
+            else{
+                var Query = col.Find(x => x.Name.StartsWith(Name.ToLower()));
+                if(Query.Count() == 0) {
+                    await ReplyAndDeleteAsync(Context.User.Mention+", There is no character with that name on the database.", timeout: TimeSpan.FromSeconds(5));
+                    return;
+                }
+                else if (Query.Count() > 1 && !Query.ToList().Exists(x => x.Name.ToLower() == Name.ToLower())){
+                    string msg = Context.User.Mention+", Multiple charactes were found! Please specify which one of the following characters is the one you're looking for: ";
+                    foreach (var q in Query)
+                    {
+                        msg += "`" + q.Name + "` ";
+                    }
+                    await ReplyAndDeleteAsync(msg.Substring(0,msg.Length-2), timeout: TimeSpan.FromSeconds(10));
+                    return;
+                }
+                else if (Query.Count() == 1 || Query.ToList().Exists(x => x.Name.ToLower() == Name.ToLower())){
+                    var chr = Query.FirstOrDefault();
+                    var embed = new EmbedBuilder()
+                        .WithTitle(chr.Name+"'s Skills")
+                        .WithColor(new Color(chr.Color[0],chr.Color[1],chr.Color[2]));
+                    var sb = new StringBuilder();
+                    foreach(var x in chr.Skills.OrderBy(x => x.Name))
+                    {
+                        sb.AppendLine("• "+x.Name+"("+x.Ability+") "+"["+(x.Ranks+chr.AbilityScores[(int)x.Ability].GetIntMod())+"]");
+                    }
+                    embed.Description = sb.ToString();
+                    await ReplyAsync("",false,embed.Build());
+                    await Context.Message.DeleteAsync();
+                }
+            }
         }
     }
 }

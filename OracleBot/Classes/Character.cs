@@ -19,11 +19,10 @@ namespace OracleBot.Classes
         public HealthBlock Health {get;set;} = new HealthBlock();
         public string Class {get;set;} = "Classless";
         public string Race {get;set;} = "Generic";
-        public AbScore[] AbilityScores {get;set;} = new AbScore[5]; //STR, DEX, CON, INT, WIS, CHA
+        public AbScore[] AbilityScores {get;set;} = new AbScore[6]; //STR, DEX, CON, INT, WIS, CHA
         public List<Ability> Traits {get;set;} = new List<Ability>();
         public List<Skill> Skills {get;set;} = new List<Skill>();
         public List<Ability> Abilities {get;set;} = new List<Ability>();
-        public List<Attack> Attacks {get;set;} = new List<Attack>();
         public List<Item> Inventory {get;set;} = new List<Item>();
         public double Money {get;set;} = 0;
         public bool CodeblockMode {get;set;} = true;
@@ -37,7 +36,7 @@ namespace OracleBot.Classes
                 "\n🧠 INT | "+AbilityScores[3].GetValue()+" ["+ AbilityScores[3].GetMod()+"] "+
                 "\n🧙 WIS | "+AbilityScores[4].GetValue()+" ["+ AbilityScores[4].GetMod()+"] "+
                 "\n👥 CHA | "+AbilityScores[5].GetValue()+" ["+ AbilityScores[5].GetMod()+"] "+"```",true)
-                .AddField("Statistics", "```css\n🔰 Level: "+ Health.Level+"\n🔴 Health: ["+Health.Current+"/"+Health.GetHealth(AbilityScores[2].GetMod())+"]"+"\n🛡 Defense Rating: "+10+ParseArmor()+"\n💥 Attack Rating: "+Health.GetBab()+"\nREF | FORT | WILL\n"+"[+"+Health.GetSave(SavingThrows.Reflex,AbilityScores)+"] | "+"[+"+Health.GetSave(SavingThrows.Fortitude,AbilityScores)+"] | "+"[+"+Health.GetSave(SavingThrows.Will,AbilityScores)+"]"+"```",true)
+                .AddField("Statistics", "```css\n🔰 Level: "+ Health.Level+"\n🔴 Health: ["+Health.Current+"/"+Health.GetHealth(AbilityScores[2].GetIntMod().ToString())+"]"+"\n🛡 Defense Rating: "+(10+ParseArmor())+"\n💥 Attack Rating: "+Health.GetBab()+"\n REF | FORT | WILL\n"+"[+"+Health.GetSave(SavingThrows.Reflex,AbilityScores)+"] | "+"[+"+Health.GetSave(SavingThrows.Fortitude,AbilityScores)+"] | "+"[+"+Health.GetSave(SavingThrows.Will,AbilityScores)+"]"+"```",true)
                 .WithThumbnailUrl(Image)
                 .WithColor(new Color(Color[0],Color[1],Color[2]));
             var sb = new StringBuilder();
@@ -63,8 +62,8 @@ namespace OracleBot.Classes
 
             if (Skills.Count == 0) eb.AddField("Skills","Use `.NewSkill Name Ability_Score Proficiency` to add.",true);
             else{
-                var sort = Skills.OrderBy(x=> x.Ranks);
-                for(int i = 0; i > 5 ; i++){
+                var sort = Skills.OrderBy(x=> x.Ranks).Reverse();
+                for(int i = 0; i < 5 ; i++){
                     var x = sort.ElementAt(i);
                     sb.AppendLine("• "+x.Name+"("+x.Ability+") "+"["+(x.Ranks+AbilityScores[(int)x.Ability].GetIntMod())+"]");
                 }
@@ -104,24 +103,24 @@ namespace OracleBot.Classes
         public bool FullBaB {get;set;} = false;
 
         public int GetHealth(string Constitution){
-            var tot = (Base*Level)+Constitution;
-            return int.Parse(tot);
+            var tot = (Base*Level)+int.Parse(Constitution);
+            return tot;
         }
         public int GetBab(){
-            int bab = FullBaB ? Convert.ToInt32(Math.Floor((double)Level*(3/4))) : Level;
+            int bab = !FullBaB ? Convert.ToInt32(Math.Floor((double)Level*(3/4))) : Level;
             return bab;
         }
         public int GetSave(SavingThrows Save, AbScore[] Scores){
             int ret = 0;
             switch (Save){
                 case SavingThrows.Reflex:
-                    ret = Reflex ? Convert.ToInt32(Math.Floor((double)Level*(1/3))) : Convert.ToInt32(Math.Floor((Level+4)*0.5));
+                    ret = !Reflex ? Convert.ToInt32(Math.Floor((double)Level*(1/3))) : Convert.ToInt32(Math.Floor((Level+4)*0.5));
                     return ret + Scores[1].GetIntMod();
                 case SavingThrows.Fortitude:
-                    ret = Fortitude ? Convert.ToInt32(Math.Floor((double)Level*(1/3))) : Convert.ToInt32(Math.Floor((Level+4)*0.5));
+                    ret = !Fortitude ? Convert.ToInt32(Math.Floor((double)Level*(1/3))) : Convert.ToInt32(Math.Floor((Level+4)*0.5));
                     return ret + Scores[2].GetIntMod();
                 case SavingThrows.Will:
-                    ret = Will ? Convert.ToInt32(Math.Floor((double)Level*(1/3))) : Convert.ToInt32(Math.Floor((Level+4)*0.5));
+                    ret = !Will ? Convert.ToInt32(Math.Floor((double)Level*(1/3))) : Convert.ToInt32(Math.Floor((Level+4)*0.5));
                     return ret + Scores[4].GetIntMod();
                 default:
                     return ret;
@@ -165,17 +164,11 @@ namespace OracleBot.Classes
         public string Description {get;set;} = "";
         public string Macro {get;set;} = "";
     }
-    public class Attack{
-        public string Name {get;set;} = "Unarmed Strike";
-        public string Description {get;set;} = "";
-        public string Macro {get;set;} = "";
-        public AttackType Type {get;set;} = AttackType.Melee;
-    }
     public class Skill {
         public string Name {get;set;}
         public int Ranks {get;set;} = 0;
         public AbilityShort Ability {get;set;}
-        public Proficiency Proficiency {get;set;} = Proficiency.Untrained;
+        public bool ClassSkill {get;set;} = false;
     }
     public class Item {
         public string Name {get;set;} = "";
@@ -189,6 +182,6 @@ namespace OracleBot.Classes
     public enum AbilityShort {STR = 0, DEX = 1, CON = 2, INT = 3, WIS = 4, CHA = 5}
     public enum SavingThrows {Reflex, Will, Fortitude}
     public enum Proficiency {Untrained = 0, Trained = 1, Expert = 2}
-    public enum AttackType {Melee, Spell}
-    public enum ItemType {Armor, Weapon, Consumable, Extra, Miscellanous}
+    public enum ItemType {Armor, Melee, Ranged, Consumable, Extra, Miscellanous}
+    public enum BoolEnum {Yes = 1, No = 0}
 }

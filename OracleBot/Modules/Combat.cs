@@ -17,197 +17,6 @@ namespace OracleBot.Modules
     {
         public LiteDatabase Database {get;set;}
 
-        [Command("NewAttack")]
-        [Summary("Adds a new attack to your character's attack list. Usage: `.NewAttack Name Description Type`. Valid types are 'Melee' and 'Magic'.")]
-        public async Task NewAttack(string Name, string Description, AttackType Type = AttackType.Melee){
-            var players = Database.GetCollection<player>("Players");
-            var col = Database.GetCollection<Character>("Characters");
-            if (!players.Exists(x => x.DiscordId == Context.User.Id)){
-                await ReplyAndDeleteAsync(Context.User.Mention+", you've never made any character so I can't find your character! Please make one with `.newchar Name`!", timeout: TimeSpan.FromSeconds(5));                    return;
-            }
-            var plr = players
-                .Include(x => x.Character)
-                .Include(x => x.Character.AbilityScores) .Include(x => x.Character.Skills)
-                .FindOne(x => x.DiscordId == Context.User.Id);
-            if (plr.Character == null){
-                await ReplyAndDeleteAsync(Context.User.Mention+", you're not locked to a character! Use `.lock Character_Name` to lock into a character.",false,null,TimeSpan.FromSeconds(5));
-                return;
-            }
-            else{
-                var chr = plr.Character;
-                if (chr.Attacks.Exists(x => x.Name.ToLower() == Name.ToLower())){
-                    var Attacks = chr.Attacks.Find(x => x.Name.ToLower().StartsWith(Name.ToLower()));
-                    int index = chr.Attacks.IndexOf(Attacks);
-                    Attacks.Description = Description;
-                    chr.Attacks[index] = Attacks;
-                    await ReplyAsync(Context.User.Mention+", Updated "+chr.Name+"'s attack **"+Attacks.Name+"**.");
-                }
-                else{
-                    var ab = new Attack(){
-                        Name = Name,
-                        Description = Description,
-                        Type = Type
-                    };
-                    chr.Attacks.Add(ab);
-                    await ReplyAsync(Context.User.Mention+", Added "+Type+" Attack **"+ab.Name+"** to "+chr.Name+".");
-                }
-                col.Update(chr);
-                await Context.Message.DeleteAsync();
-            }
-        }
-        [Command("RemoveAttack"), Alias("RemAttack", "DeleteAttack","DelAttack")]
-        [Summary("Removes an attack from your character's attack list. Usage: `.RemAttack Name`.")]
-        public async Task RemAttack([Remainder] string Name){
-            var players = Database.GetCollection<player>("Players");
-            var col = Database.GetCollection<Character>("Characters");
-            if (!players.Exists(x => x.DiscordId == Context.User.Id)){
-                await ReplyAndDeleteAsync(Context.User.Mention+", you've never made any character so I can't find your character! Please make one with `.newchar Name`!", timeout: TimeSpan.FromSeconds(5));                    return;
-            }
-            var plr = players
-                .Include(x => x.Character)
-                .Include(x => x.Character.AbilityScores) .Include(x => x.Character.Skills)
-                .FindOne(x => x.DiscordId == Context.User.Id);
-            if (plr.Character == null){
-                await ReplyAndDeleteAsync(Context.User.Mention+", you're not locked to a character! Use `.lock Character_Name` to lock into a character.",false,null,TimeSpan.FromSeconds(5));
-                return;
-            }
-            else{
-                var chr = plr.Character;
-                if (!chr.Attacks.Exists(x => x.Name.ToLower().StartsWith(Name.ToLower()))){
-                    await ReplyAndDeleteAsync(Context.User.Mention+", your character doesn't have any Attacks whose name starts with "+Name+".", timeout: TimeSpan.FromSeconds(5));
-                    return;
-                }
-                if (chr.Attacks.Where(x => x.Name.ToLower().StartsWith(Name.ToLower())).Count() > 1 && !chr.Attacks.Exists(x => x.Name.ToLower() == Name.ToLower())){
-                    var result = chr.Attacks.Where(x => x.Name.ToLower().StartsWith(Name.ToLower()));
-                    var sb = new StringBuilder().Append(Context.User.Mention+", "+chr.Name+" has more than " + result.Count()+ " Attacks that starts with the word **"+Name+"**. Please specify which one from this list is the one you want to remove by using said Trait's full name: ");
-                    foreach (var x in result){
-                        sb.Append("`"+x.Name+"`, ");
-                    }
-                    await ReplyAndDeleteAsync(sb.ToString().Substring(0,sb.Length-2), timeout: TimeSpan.FromSeconds(10));
-                    return;
-                }
-                else{
-                    var trait = chr.Attacks.Find(x => x.Name.ToLower().StartsWith(Name.ToLower()));
-                    chr.Attacks.Remove(trait);
-                    col.Update(chr);
-                    await ReplyAsync(Context.User.Mention+", you removed "+chr.Name+"'s attack **"+trait.Name+"**.");
-                }
-                await Context.Message.DeleteAsync();
-            }
-        }
-        [Command("Attack")]
-        [Summary("Evoke one of your attacks (And roll their macro if they have one). Usage: `.Attack Name`")]
-        public async Task MeleeAttack([Remainder] string Name){
-            var players = Database.GetCollection<player>("Players");
-            var col = Database.GetCollection<Character>("Characters");
-            if (!players.Exists(x => x.DiscordId == Context.User.Id)){
-                await ReplyAndDeleteAsync(Context.User.Mention+", you've never made any character so I can't find your character! Please make one with `.newchar Name`!", timeout: TimeSpan.FromSeconds(5));                    return;
-            }
-            var plr = players
-                .Include(x => x.Character)
-                .Include(x => x.Character.AbilityScores) .Include(x => x.Character.Skills)
-                .FindOne(x => x.DiscordId == Context.User.Id);
-            if (plr.Character == null){
-                await ReplyAndDeleteAsync(Context.User.Mention+", you're not locked to a character! Use `.lock Character_Name` to lock into a character.",false,null,TimeSpan.FromSeconds(5));
-                return;
-            }
-            else{
-                var chr = plr.Character;
-                if (!chr.Attacks.Exists(x => x.Name.ToLower().StartsWith(Name.ToLower()))){
-                    await ReplyAndDeleteAsync(Context.User.Mention+", your character doesn't have any Attacks whose name starts with "+Name+".", timeout: TimeSpan.FromSeconds(5));
-                    return;
-                }
-                if (chr.Attacks.Where(x => x.Name.ToLower().StartsWith(Name.ToLower())).Count() > 1 && !chr.Attacks.Exists(x => x.Name.ToLower() == Name.ToLower())){
-                    var result = chr.Attacks.Where(x => x.Name.ToLower().StartsWith(Name.ToLower()));
-                    var sb = new StringBuilder().Append(Context.User.Mention+", "+chr.Name+" has more than " + result.Count()+ " Attacks that starts with the word **"+Name+"**. Please specify which one from this list is the one you want to remove by using said Trait's full name: ");
-                    foreach (var x in result){
-                        sb.Append("`"+x.Name+"`, ");
-                    }
-                    await ReplyAndDeleteAsync(sb.ToString().Substring(0,sb.Length-2), timeout: TimeSpan.FromSeconds(10));
-                    return;
-                }
-                else{
-                    var trait = chr.Attacks.Find(x => x.Name.ToLower().StartsWith(Name.ToLower()));
-                    string title = "";
-                    if (trait.Type == AttackType.Melee) title = chr.Name+" used their special technique: ";
-                    else if (trait.Type == AttackType.Spell) title = chr.Name+" casted ";
-                    var embed = new EmbedBuilder()
-                        .WithTitle(title+trait.Name)
-                        .WithDescription(trait.Description)
-                        .WithColor(chr.Color[0],chr.Color[1],chr.Color[2]);
-                    if (MacroProcessor.IsReference(trait.Description)){ embed.Description = MacroProcessor.MacroReference(trait.Description,chr);}
-                    if (trait.Macro != ""){
-                        embed.AddField("Roll",MacroProcessor.MacroRoll(trait.Macro,chr).Roll().Value.ToString());
-                    }
-                    await ReplyAsync("",false,embed.Build());
-                }
-                await Context.Message.DeleteAsync();
-            }
-        }
-        [Command("Attacks")]
-        [Summary("Shows someone character's attacks and their details. Usage: `.Attacks Name`. Use this command without any name to show your character's attacks.")]
-        public async Task getatks([Remainder] string Name = ""){
-            var players = Database.GetCollection<player>("Players");
-            var col = Database.GetCollection<Character>("Characters");
-            if (Name == "" || Name == null){
-                if (!players.Exists(x => x.DiscordId == Context.User.Id)){
-                    await ReplyAndDeleteAsync(Context.User.Mention+", you've never made any character so I can't find your character! Please make one with `.newchar Name`!", timeout: TimeSpan.FromSeconds(5));
-                    return;
-                }
-                var plr = players
-                    .Include(x => x.Character)
-                    .Include(x => x.Character.AbilityScores) .Include(x => x.Character.Skills)
-                    .FindOne(x => x.DiscordId == Context.User.Id);
-                if (plr.Character == null){
-                    await ReplyAndDeleteAsync(Context.User.Mention+", you're not locked to a character! Use `.lock Character_Name` to lock into a character.",false,null,TimeSpan.FromSeconds(5));
-                    return;
-                }
-                else{
-                    var chr = plr.Character;
-                    var embed = new EmbedBuilder()
-                        .WithTitle(chr.Name+"'s Attacks");
-                    foreach(var x in chr.Attacks){
-                        string title = (x.Type == AttackType.Melee) ? "💥 " : "✨ ";
-                        if (MacroProcessor.IsReference(x.Description)){
-                            embed.AddField(title+x.Name,MacroProcessor.MacroReference(x.Description,chr));
-                        }
-                        else embed.AddField(title+x.Name,x.Description);
-                    }
-                    await ReplyAsync("",false,embed.Build());
-                    await Context.Message.DeleteAsync();
-                }
-            }
-            else{
-                var Query = col.Find(x => x.Name.StartsWith(Name.ToLower()));
-                if(Query.Count() == 0) {
-                    await ReplyAndDeleteAsync(Context.User.Mention+", There is no character with that name on the database.", timeout: TimeSpan.FromSeconds(5));
-                    return;
-                }
-                else if (Query.Count() > 1 && !Query.ToList().Exists(x => x.Name.ToLower() == Name.ToLower())){
-                    string msg = Context.User.Mention+", Multiple charactes were found! Please specify which one of the following characters is the one you're looking for: ";
-                    foreach (var q in Query)
-                    {
-                        msg += "`" + q.Name + "` ";
-                    }
-                    await ReplyAndDeleteAsync(msg.Substring(0,msg.Length-2), timeout: TimeSpan.FromSeconds(10));
-                    return;
-                }
-                else if (Query.Count() == 1 || Query.ToList().Exists(x => x.Name.ToLower() == Name.ToLower())){
-                    var chr = Query.FirstOrDefault();
-                    var embed = new EmbedBuilder()
-                        .WithTitle(chr.Name+"'s Attacks");
-                    foreach(var x in chr.Attacks){
-                        string title = (x.Type == AttackType.Melee) ? "💥 " : "✨ ";
-                        if (MacroProcessor.IsReference(x.Description)){
-                            embed.AddField(title+x.Name,MacroProcessor.MacroReference(x.Description,chr));
-                        }
-                        else embed.AddField(title+x.Name,x.Description);
-                    }
-                    await ReplyAsync("",false,embed.Build());
-                    await Context.Message.DeleteAsync();
-                }
-            }
-        }
         [Command("Hurt")]
         [Summary("Reduce your character's HP by an amount. Usage: `.Hurt Amount`. Note: GMs can hurt any PC by inputting the name of the character at the end.")]
         public async Task Hurt(int amount, [Remainder] string Name = ""){
@@ -258,6 +67,7 @@ namespace OracleBot.Modules
                     if (chr.Health.Current < 0) chr.Health.Current = 0;
                     col.Update(chr);
                     await ReplyAsync(Context.User.Mention+", "+chr.Name+" took **"+amount+"** damage!");
+                    if (chr.Health.Current == 0) await ReplyAsync(chr.Name+"'s HP has dropped to 0!");
                     await Context.Message.DeleteAsync();
                 }
             }
@@ -285,7 +95,7 @@ namespace OracleBot.Modules
                 else{
                     var chr = plr.Character;
                     chr.Health.Current += amount;
-                    if (chr.Health.Current > chr.Health.GetHealth(chr.AbilityScores[2].GetValue())) chr.Health.Current = chr.Health.GetHealth(chr.AbilityScores[2].GetValue());
+                    if (chr.Health.Current > chr.Health.GetHealth(chr.AbilityScores[2].GetIntMod().ToString())) chr.Health.Current = chr.Health.GetHealth(chr.AbilityScores[2].GetIntMod().ToString());
                     col.Update(chr);
                     await ReplyAsync(Context.User.Mention+", "+chr.Name+" healed **"+amount+"** Hit Points.");
                     await Context.Message.DeleteAsync();

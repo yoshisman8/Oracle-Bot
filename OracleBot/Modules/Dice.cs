@@ -150,6 +150,7 @@ namespace OracleBot.Modules
         [Command("SkillCheck"), Alias("SC")]
         [Summary("Rolls a skill check for your locked character. Usage: `.SC Skill_Name`")]
         public async Task SkillCheck(string Name, [Remainder] string Extra = ""){
+            Extra = Extra == "" ? "" : "+0"+Extra;
             var players = Database.GetCollection<player>("Players");
             var col = Database.GetCollection<Character>("Characters");
             var valid = System.Text.RegularExpressions.Regex.IsMatch(Extra.ToLower(), @"^[d-dk-k0-9\+\-\s\*]*$");
@@ -186,17 +187,15 @@ namespace OracleBot.Modules
                     var skill = chr.Skills.Find(x => x.Name.ToLower().StartsWith(Name.ToLower()));
                     string mod = (chr.AbilityScores[(int)skill.Ability].GetMod(true));
                     string ranks = skill.Ranks.ToString();
-                    var ExtraR = Extra != "" ? parser.Parse(Extra).Roll() : null;
-                    var result = parser.Parse("1d20 + "+mod+"+"+ranks+"+"+ExtraR.Value.ToString()).Roll();
+                    string classbonus = skill.ClassSkill ? "+3" : "";
+                    var ExtraR = Extra != "" ? parser.Parse(Extra).Roll() : parser.Parse("0").Roll();
+                    var result = parser.Parse("1d20 + "+mod+"+"+ranks+"+"+classbonus+ExtraR.Value.ToString()).Roll();
                     string bfr = "";
                     if (ExtraR != null){
                         foreach(var x in ExtraR.Results){
+                            if (x.Value == 0) continue;
                             bfr += "+"+x.Value;
-                        }
-                        var ematch = Regex.Matches(Extra,@"\W[\+\-]?[\w\W]?[0-9]+\b").Cast<Match>().Select(match => match.Value).ToList();
-                        foreach (var x in ematch){
-                            bfr += x;
-                        }                        
+                        }                       
                     }
                     await ReplyAsync(Context.User.Mention+", "+chr.Name+" rolled a **"+result.Value+"** ("+result.Results[0].Value+"+"+mod+"+"+ranks+bfr+") on their "+skill.Name+" Check");
                     await Context.Message.DeleteAsync();                    
@@ -207,6 +206,7 @@ namespace OracleBot.Modules
         [Summary("Rolls a skill check for your locked character. Usage: `.ST Ability (Optional)ExtraBonuses`\n"+
                 "Note on Extra bonuses: These can be things like a plus or minus to said saving throw. You can also add regular dice rolls here, for example: `.ST Will + 1d6` to add an extra 1d6 to your saving throw.")]
         public async Task SavingThrow(SavingThrows save, [Remainder] string extra = ""){
+            extra = extra == "" ? "" : "0"+extra;
             var players = Database.GetCollection<player>("Players");
             var col = Database.GetCollection<Character>("Characters");
             var valid = System.Text.RegularExpressions.Regex.IsMatch(extra.ToLower(), @"^[d-dk-k0-9\+\-\s\*]*$");
@@ -228,17 +228,14 @@ namespace OracleBot.Modules
             else{
                 var chr = plr.Character;
                 string Mod = chr.Health.GetSave(save,chr.AbilityScores).ToString();
-                var ExtraR = extra != "" ? parser.Parse(extra).Roll() : null;
-                var result = parser.Parse("1d20 + "+ Mod +" + "+ExtraR.Value).Roll();
+                var ExtraR = extra != "" ? parser.Parse(extra).Roll() : parser.Parse("0").Roll();
+                var result = parser.Parse("1d20 + "+ Mod +" + "+ExtraR.Value.ToString()).Roll();
                     string bfr = "";
                     if (ExtraR != null){
-                        foreach(var x in ExtraR.Results){
+                        foreach(var x in ExtraR.Results){   
+                            if (x.Value == 0) continue;
                             bfr += "+"+x.Value;
-                        }
-                        var ematch = Regex.Matches(extra,@"\W[\+\-]?[\w\W]?[0-9]+\b").Cast<Match>().Select(match => match.Value).ToList();
-                        foreach (var x in ematch){
-                            bfr += x;
-                        }                        
+                        }                      
                     }
                 await ReplyAsync(Context.User.Mention+", "+chr.Name+" Rolled a **"+result.Value+"** ("+result.Results[0].Value+"+"+Mod+bfr+") on their "+save+" Saving Throw.");
                 await Context.Message.DeleteAsync();
