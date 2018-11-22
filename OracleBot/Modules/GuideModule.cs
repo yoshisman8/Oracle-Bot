@@ -13,11 +13,25 @@ using DiceNotation;
 
 namespace OracleBot.Modules
 {
-    public class GuideModule :InteractiveBase<SocketCommandContext>
+    public class GuideModule : InteractiveBase<SocketCommandContext>
     {
-           [Command("Help", RunMode = RunMode.Async)]
-           public async Task Help(){
-           }
+        [Command("Guide", RunMode = RunMode.Async)]
+        public async Task guide(){ 
+            var guide = new CharacterGuide();
+            var n = new Emoji("▶");
+            var p = new Emoji("◀");
+            var s = new Emoji("⏹");
+
+            var msg = await ReplyAsync("",false,guide.Pages[0]);
+            await msg.AddReactionAsync(p);
+            await msg.AddReactionAsync(s);
+            await msg.AddReactionAsync(n);
+
+            Interactive.AddReactionCallback(msg,new InlineReactionCallback(Interactive,Context,new ReactionCallbackData("",guide.Pages[0],false,false,null)
+                .WithCallback(p,(c,r) => guide.GoBack(r.Emote,c,msg))
+                .WithCallback(s,(c,r) => guide.End(msg,c))
+                .WithCallback(n,(c,r) => guide.Advance(r.Emote,c,msg))));
+        }
     }
     public class CharacterGuide{
         public Embed[] Pages{get;set;} =
@@ -49,7 +63,7 @@ namespace OracleBot.Modules
                     .AddInlineField("Traits","A trait is an aspect of your character that's entirely passive and is often outside of their control. These are more commonly physical traits or background/social traits (such as upbringing or knowing someone or being part of a certain faction). You can add or update one of these to your character by using `.NewTrait Name Description` or `.DelTrait Name` to remove one that's outdated.")
                     .AddInlineField("Feats","Feats are aspects of your character that make them stand out from the crowd. These are often things your character has trained or had some degree of choice in the matter. Good examples are things like Weapon training, Spell Resistance, Skill Focus and so on. You can add or update one of these to your character by using `.NewFeat Name Description` or `.DelFeat Name` to remove one that's outdated.")
                     .AddInlineField("Abilities","Unlike the other two, Ablities have a lot more impact into how your character plays. These tend to come from your character's profession or class. Such as a wizard having the  \"Magic School: Fire\" as an Ability or a Rouge having a \"Sneak Attack\" ability to add damage to their attacks. All in all, Abilities are your character's special, well, abilities. You can add or update one of these to your character by using `.NewAbility Name Description` or `.DelAbility Name` to remove one that's outdated.")
-                    .AddField("Time to add your own!","Now that you know what each one of them are, how about we give your character its first ability? Type the name of your characters ability followed by a `|` and then its description. Don't worry, you can change it later with `.AddAbility Name Description`.")
+                    .AddField("Time to add your own!","Now that you know what each one of them are, use the commands described above to add at least one of each!")
                     .Build(),
                 new EmbedBuilder()
                     .WithTitle("Character Creation Guide: Finishing Touches")
@@ -60,7 +74,38 @@ namespace OracleBot.Modules
                     .AddInlineField("Good and Poor saving throws","A saving throw can be either 'Good' or 'Poor'. This means that the base bonus you get (Before you add your DEX/CON/WIS) goes up at diferent rates. A Poor saving throw only gets 1/3rd of your character's level added to it (rounded down). A good saving throw however, gets your character's level +4 multiplied by 0.5 instead. Typically a character has at least one good saving throw and at best two. Never three or none. To change a saving throw to be good or bad you can use `.ToggleSave SavingThrowName`.")
                     .AddInlineField("Base Attack Bonus", "Your Base Attack Bonus is, as the name implies, a bonus you get to your attacks before you apply your Strength (For melee attacks) or Dexterity (For ranged attacks). This bonus is either 3/4 of your level or 1-to-1 with your level. You can toggle this by using the command `.ToggleBaB`")
                     .AddInlineField("Base Hit Points","Your max Hit Points (Or HP) is determined by a base value (Defaults to 6) which is multiplied by your level. 6 Tends to be the average number for most Professions or Classes, 4 Is often used for 'Squishy' classes like spellcasters while 8 or even 10 is used for more hardy classes like Warriors or Barbarians. You can change your Base Hp with `.SetBaseHP Value`.")
+                    .AddField("All done!","Feel free to click on the ⏹ icon in order to end this tutorial, or use ◀ or ▶ to go back to a previous or next page.")
             };
+            public int index {get;set;} = 0;
+            
+            public async Task Advance(IEmote reaction, SocketCommandContext context, IUserMessage msg){
+                if (index == Pages.Length-1){
+                    await msg.RemoveReactionAsync(reaction,context.User);
+                    return;
+                }
+                else {
+                    index++;
+                    await msg.ModifyAsync(x => x.Embed = Pages[index]);
+                    await msg.RemoveReactionAsync(reaction,context.User);
+                    return;
+                }
+            }
+            public async Task GoBack(IEmote reaction, SocketCommandContext context, IUserMessage msg){
+                if (index == 0){
+                    await msg.RemoveReactionAsync(reaction,context.User);
+                    return;
+                }
+                else {
+                    index--;
+                    await msg.ModifyAsync(x => x.Embed = Pages[index]);
+                    await msg.RemoveReactionAsync(reaction,context.User);
+                    return;
+                }
+            }
+            public async Task End(IUserMessage msg,SocketCommandContext context){
+                await msg.DeleteAsync();
+                await context.Message.DeleteAsync();
+            }
             public static string generatescores(){
             var parser = new DiceParser();
             var sb = new StringBuilder();
