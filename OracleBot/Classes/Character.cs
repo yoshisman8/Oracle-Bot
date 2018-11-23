@@ -82,7 +82,7 @@ namespace OracleBot.Classes
             return eb.Build();
         }
         public void Fullheal(){
-            Health.Current = Health.GetHealth(AbilityScores[2].GetMod());
+            Health.Current = Health.GetHealth(AbilityScores[2].GetIntMod().ToString());
         }
         public int ParseArmor(){
             int tot = 0;

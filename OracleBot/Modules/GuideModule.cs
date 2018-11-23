@@ -22,15 +22,15 @@ namespace OracleBot.Modules
             var p = new Emoji("◀");
             var s = new Emoji("⏹");
 
-            var msg = await ReplyAsync("",false,guide.Pages[0]);
+            var msg = await ReplyAsync("Please wait for all 3 buttons to load in.",false,guide.Pages[0]);
             await msg.AddReactionAsync(p);
             await msg.AddReactionAsync(s);
             await msg.AddReactionAsync(n);
 
             Interactive.AddReactionCallback(msg,new InlineReactionCallback(Interactive,Context,new ReactionCallbackData("",guide.Pages[0],false,false,null)
-                .WithCallback(p,(c,r) => guide.GoBack(r.Emote,c,msg))
+                .WithCallback(p,(c,r) => guide.GoBack(r,c,msg))
                 .WithCallback(s,(c,r) => guide.End(msg,c))
-                .WithCallback(n,(c,r) => guide.Advance(r.Emote,c,msg))));
+                .WithCallback(n,(c,r) => guide.Advance(r,c,msg))));
         }
     }
     public class CharacterGuide{
@@ -66,7 +66,7 @@ namespace OracleBot.Modules
                     .AddField("Time to add your own!","Now that you know what each one of them are, use the commands described above to add at least one of each!")
                     .Build(),
                 new EmbedBuilder()
-                    .WithTitle("Character Creation Guide: Finishing Touches")
+                    .WithTitle("Character Creation Guide: Saving Throws, Base Attack Bonus and Hit Points")
                     .WithColor(Color.Orange)
                     .WithTimestamp(DateTime.Now)
                     .WithDescription("We're almost done! Let's cover up some of the last things about your character. These being Good and Poor Saving throws, Base Attack Bonus and Base HP.")
@@ -74,31 +74,42 @@ namespace OracleBot.Modules
                     .AddInlineField("Good and Poor saving throws","A saving throw can be either 'Good' or 'Poor'. This means that the base bonus you get (Before you add your DEX/CON/WIS) goes up at diferent rates. A Poor saving throw only gets 1/3rd of your character's level added to it (rounded down). A good saving throw however, gets your character's level +4 multiplied by 0.5 instead. Typically a character has at least one good saving throw and at best two. Never three or none. To change a saving throw to be good or bad you can use `.ToggleSave SavingThrowName`.")
                     .AddInlineField("Base Attack Bonus", "Your Base Attack Bonus is, as the name implies, a bonus you get to your attacks before you apply your Strength (For melee attacks) or Dexterity (For ranged attacks). This bonus is either 3/4 of your level or 1-to-1 with your level. You can toggle this by using the command `.ToggleBaB`")
                     .AddInlineField("Base Hit Points","Your max Hit Points (Or HP) is determined by a base value (Defaults to 6) which is multiplied by your level. 6 Tends to be the average number for most Professions or Classes, 4 Is often used for 'Squishy' classes like spellcasters while 8 or even 10 is used for more hardy classes like Warriors or Barbarians. You can change your Base Hp with `.SetBaseHP Value`.")
-                    .AddField("All done!","Feel free to click on the ⏹ icon in order to end this tutorial, or use ◀ or ▶ to go back to a previous or next page.")
+                    .AddField("All done?","Click ▶ once you're done tuning these variables to move to the next page!")
+                    .Build(),
+                new EmbedBuilder()
+                    .WithTitle("Character Creation Guide: Finishing Touches")
+                    .WithColor(Color.Orange)
+                    .WithTimestamp(DateTime.Now)
+                    .WithDescription("Now that you're done changing the boring numbers and variables, its time we move into the cosmetic aspects of your sheet. Here are some commands you can use to change the non-gameplay changing aspects of your character.")
+                    .AddInlineField("Change your Race or Class","Although it offers no mechanical effect, sometimes you don't want to be the Generic Classless. If you want to change either your class or your race you just have to use `.SetClass Class` or `.SetRace Race`.")
+                    .AddInlineField("Set your portrait","If you want to change that pesky white silhouette from your avatar, all you have to do is use the command `.SetImage ImageUrl` or send an image and write `.SetImage` as the comment of the image.")
+                    .AddInlineField("Change the color trim","You can even change the color of the trim that shows up on the left of the embed for your sheet! All you have to do is use `.SetColor RED GREEN BLUE`. These values must be numbers between 0-255. If you need help getting the RGB code for a color, click [this link](https://www.google.com.do/search?q=color+picker&oq=color+picker&aqs=chrome..69i57j0l5.4526j0j7&sourceid=chrome&ie=UTF-8)!")
+                    .AddField("You're finished!","That's the end of this guide! Congratulations! You now have your own character under the new Tabletop Dragon's Den 3.5th edition system! If you have any more questions or need more guidance, use the `.help` command to see what other guides are available!")
+                    .Build()
             };
             public int index {get;set;} = 0;
             
-            public async Task Advance(IEmote reaction, SocketCommandContext context, IUserMessage msg){
+            public async Task Advance(SocketReaction reaction, SocketCommandContext context, IUserMessage msg){
                 if (index == Pages.Length-1){
-                    await msg.RemoveReactionAsync(reaction,context.User);
+                    await msg.RemoveReactionAsync(reaction.Emote,reaction.User.Value);
                     return;
                 }
                 else {
                     index++;
                     await msg.ModifyAsync(x => x.Embed = Pages[index]);
-                    await msg.RemoveReactionAsync(reaction,context.User);
+                    await msg.RemoveReactionAsync(reaction.Emote,reaction.User.Value);
                     return;
                 }
             }
-            public async Task GoBack(IEmote reaction, SocketCommandContext context, IUserMessage msg){
+            public async Task GoBack(SocketReaction reaction, SocketCommandContext context, IUserMessage msg){
                 if (index == 0){
-                    await msg.RemoveReactionAsync(reaction,context.User);
+                    await msg.RemoveReactionAsync(reaction.Emote,reaction.User.Value);
                     return;
                 }
                 else {
                     index--;
                     await msg.ModifyAsync(x => x.Embed = Pages[index]);
-                    await msg.RemoveReactionAsync(reaction,context.User);
+                    await msg.RemoveReactionAsync(reaction.Emote,reaction.User.Value);
                     return;
                 }
             }

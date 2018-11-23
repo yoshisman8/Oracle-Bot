@@ -45,37 +45,37 @@ namespace OracleBot.Modules
                 await Context.Message.DeleteAsync();
             }
         }
-        [Command("SetBonusScore"), Alias("ExtraAbilityScore","SetExtraScore","AbilityImprovement")]
-        [Summary("Set your locked character's extra ability score bonus. Usage: `.SetEScore AbScore Value Proficiency`.\n"+
-            "Valid Scores are `STR/DEX/CON/INT/WIS` and Proficiencies are `Untrained/Trained/Expert`. All case sensitive.")]        
-        public async Task SetEAbScore(AbilityShort Score, int Value){
-            Value = Math.Abs(Value);
-            if (Value > 30){
-                await ReplyAndDeleteAsync(Context.User.Mention+", You can't set ability scores higher than 30!", timeout: TimeSpan.FromSeconds(5));
-                return;
-            }
-            var players = Database.GetCollection<player>("Players");
-            var col = Database.GetCollection<Character>("Characters");
-            if (!players.Exists(x => x.DiscordId == Context.User.Id)){
-                await ReplyAndDeleteAsync(Context.User.Mention+", you've never made any character so I can't find your character! Please make one with `.newchar Name`!", timeout: TimeSpan.FromSeconds(5));                    return;
-            }
-            var plr = players
-                .Include(x => x.Character)
-                .Include(x => x.Character.AbilityScores) .Include(x => x.Character.Skills)
-                .FindOne(x => x.DiscordId == Context.User.Id);
-            if (plr.Character == null){
-                await ReplyAndDeleteAsync(Context.User.Mention+", you're not locked to a character! Use `.lock Character_Name` to lock into a character.",false,null,TimeSpan.FromSeconds(5));
-                return;
-            }
-            else{
-                var chr = plr.Character;
-                chr.AbilityScores[(int)Score].Extra = Value;
-                if (Score == AbilityShort.CON) chr.Fullheal();
-                col.Update(chr);
-                await ReplyAsync(Context.User.Mention+", You set **"+chr.Name+"**'s "+Score+" score increase to "+Value+".");
-                await Context.Message.DeleteAsync();
-            }
-        }
+        // [Command("SetBonusScore"), Alias("ExtraAbilityScore","SetExtraScore","AbilityImprovement")]
+        // [Summary("Set your locked character's extra ability score bonus. Usage: `.SetEScore AbScore Value Proficiency`.\n"+
+        //     "Valid Scores are `STR/DEX/CON/INT/WIS` and Proficiencies are `Untrained/Trained/Expert`. All case sensitive.")]        
+        // public async Task SetEAbScore(AbilityShort Score, int Value){
+        //     Value = Math.Abs(Value);
+        //     if (Value > 30){
+        //         await ReplyAndDeleteAsync(Context.User.Mention+", You can't set ability scores higher than 30!", timeout: TimeSpan.FromSeconds(5));
+        //         return;
+        //     }
+        //     var players = Database.GetCollection<player>("Players");
+        //     var col = Database.GetCollection<Character>("Characters");
+        //     if (!players.Exists(x => x.DiscordId == Context.User.Id)){
+        //         await ReplyAndDeleteAsync(Context.User.Mention+", you've never made any character so I can't find your character! Please make one with `.newchar Name`!", timeout: TimeSpan.FromSeconds(5));                    return;
+        //     }
+        //     var plr = players
+        //         .Include(x => x.Character)
+        //         .Include(x => x.Character.AbilityScores) .Include(x => x.Character.Skills)
+        //         .FindOne(x => x.DiscordId == Context.User.Id);
+        //     if (plr.Character == null){
+        //         await ReplyAndDeleteAsync(Context.User.Mention+", you're not locked to a character! Use `.lock Character_Name` to lock into a character.",false,null,TimeSpan.FromSeconds(5));
+        //         return;
+        //     }
+        //     else{
+        //         var chr = plr.Character;
+        //         chr.AbilityScores[(int)Score].Extra = Value;
+        //         if (Score == AbilityShort.CON) chr.Fullheal();
+        //         col.Update(chr);
+        //         await ReplyAsync(Context.User.Mention+", You set **"+chr.Name+"**'s "+Score+" score increase to "+Value+".");
+        //         await Context.Message.DeleteAsync();
+        //     }
+        // }
         [Command("SetImage")]
         [Summary("Sets your locked character's thumbnail image. Usage: `.SetImage ImageURL` Alternatively, you can send an image and type the `.SetImage` command with no arguments.")]
         public async Task SetIMG([Remainder] string ImageURL = "https://media.discordapp.net/attachments/357593658586955776/454118701592215554/user-black-close-up-shape.png"){
@@ -385,8 +385,8 @@ namespace OracleBot.Modules
             }
         }
         [Command("SetColor")]
-        [Summary("Sets the color of the vertical bar on your character sheet. Usage: `.Color RED BLUE GREEN` All values are from 0-255.")]
-        public async Task SetColor(int R, int B, int G){
+        [Summary("Sets the color of the vertical bar on your character sheet. Usage: `.Color RED GREEN BLUE` All values are from 0-255.")]
+        public async Task SetColor(int R, int G, int B){
             if ((R < 0 || G < 0 || B < 0) || (R > 255 || G > 255 || B > 255)){
                 await ReplyAndDeleteAsync(Context.User.Mention+", RGB values go from 0 to 255. Please use correct values!", timeout: TimeSpan.FromSeconds(5));
                 return;
@@ -407,8 +407,8 @@ namespace OracleBot.Modules
             else{
                 var chr = plr.Character;
                 chr.Color[0] = R;
-                chr.Color[1] = B;
-                chr.Color[2] = G;
+                chr.Color[1] = G;
+                chr.Color[2] = B;
                 col.Update(chr);
                 await ReplyAsync(Context.User.Mention+", You set **"+chr.Name+"**'s custom Sheet color.");
                 await Context.Message.DeleteAsync();
@@ -462,31 +462,31 @@ namespace OracleBot.Modules
                 await Context.Message.DeleteAsync();
             }
         }
-        [Command("SetEHP")]
-        [Summary("Sets the your character's extra HP (adds on top of your CON-based HP). Usage: `.SetHP HealthValue`.")]
-        public async Task SetHP([Remainder]int HP){
-            HP = Math.Abs(HP);
-            var players = Database.GetCollection<player>("Players");
-            var col = Database.GetCollection<Character>("Characters");
-            if (!players.Exists(x => x.DiscordId == Context.User.Id)){
-                await ReplyAndDeleteAsync(Context.User.Mention+", you've never made any character so I can't find your character! Please make one with `.newchar Name`!", timeout: TimeSpan.FromSeconds(5));                    return;
-            }
-            var plr = players
-                .Include(x => x.Character)
-                .Include(x => x.Character.AbilityScores) .Include(x => x.Character.Skills)
-                .FindOne(x => x.DiscordId == Context.User.Id);
-            if (plr.Character == null){
-                await ReplyAndDeleteAsync(Context.User.Mention+", you're not locked to a character! Use `.lock Character_Name` to lock into a character.",false,null,TimeSpan.FromSeconds(5));
-                return;
-            }
-            else{
-                var chr = plr.Character;
-                chr.Health.Extra = HP;
-                col.Update(chr);
-                await ReplyAsync(Context.User.Mention+", You set **"+chr.Name+"**'s Extra HP to "+ HP +".");
-                await Context.Message.DeleteAsync();
-            }
-        }
+        // [Command("SetEHP")]
+        // [Summary("Sets the your character's extra HP (adds on top of your CON-based HP). Usage: `.SetHP HealthValue`.")]
+        // public async Task SetHP([Remainder]int HP){
+        //     HP = Math.Abs(HP);
+        //     var players = Database.GetCollection<player>("Players");
+        //     var col = Database.GetCollection<Character>("Characters");
+        //     if (!players.Exists(x => x.DiscordId == Context.User.Id)){
+        //         await ReplyAndDeleteAsync(Context.User.Mention+", you've never made any character so I can't find your character! Please make one with `.newchar Name`!", timeout: TimeSpan.FromSeconds(5));                    return;
+        //     }
+        //     var plr = players
+        //         .Include(x => x.Character)
+        //         .Include(x => x.Character.AbilityScores) .Include(x => x.Character.Skills)
+        //         .FindOne(x => x.DiscordId == Context.User.Id);
+        //     if (plr.Character == null){
+        //         await ReplyAndDeleteAsync(Context.User.Mention+", you're not locked to a character! Use `.lock Character_Name` to lock into a character.",false,null,TimeSpan.FromSeconds(5));
+        //         return;
+        //     }
+        //     else{
+        //         var chr = plr.Character;
+        //         chr.Health.Extra = HP;
+        //         col.Update(chr);
+        //         await ReplyAsync(Context.User.Mention+", You set **"+chr.Name+"**'s Extra HP to "+ HP +".");
+        //         await Context.Message.DeleteAsync();
+        //     }
+        // }
         [Command("SetBaseHP"), Alias("SetHP")]
         [Summary("Sets the your character's base HP (This is multiplied by your level). Usage: `.SetHP HealthValue`.")]
         public async Task SetBaseHP([Remainder]int HP){
