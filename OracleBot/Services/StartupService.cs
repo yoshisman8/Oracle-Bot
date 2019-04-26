@@ -2,9 +2,12 @@
 using Discord.Commands;
 using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Reflection;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using OracleBot.Classes;
 
 namespace OracleBot.Services
 {
@@ -25,7 +28,7 @@ namespace OracleBot.Services
             _commands = commands;
         }
 
-        public async Task StartAsync()
+        public async Task StartAsync(ServiceProvider Provider)
         {
             string discordToken = _config["tokens:discord"];     // Get the discord token from the config file
             if (string.IsNullOrWhiteSpace(discordToken))
@@ -34,8 +37,8 @@ namespace OracleBot.Services
             await _discord.LoginAsync(TokenType.Bot, discordToken);     // Login to discord
             await _discord.SetGameAsync(_config["status"]); 
             await _discord.StartAsync();                                // Connect to the websocket
-
-            await _commands.AddModulesAsync(Assembly.GetEntryAssembly());     // Load commands and modules into the command service
+            _commands.AddTypeReader(typeof(List<Character>),new CharacterTypeReader()); //Adds custom TypeReader for Characters
+            await _commands.AddModulesAsync(Assembly.GetEntryAssembly(),Provider);     // Load commands and modules into the command service
         }
     }
 }

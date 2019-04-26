@@ -100,7 +100,9 @@ namespace OracleBot.Modules
 
         public Embed MainMenu(){
             return new EmbedBuilder()
-                .WithTitle("Help Menu: Main menu");
+                .WithTitle("Help Menu: Main menu")
+                
+                .Build();
         }
     }
 }

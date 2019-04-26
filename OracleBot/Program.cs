@@ -40,7 +40,6 @@ namespace OracleBot
                 .AddSingleton<CommandHandler>()     // Add remaining services to the provider
                 .AddSingleton<LoggingService>()     
                 .AddSingleton<StartupService>()
-                .AddSingleton(new LiteDatabase(@"Database.db"))
                 .AddSingleton<InteractiveService>()
                 .AddSingleton<Random>()             // You get better random with a single instance than by creating a new one every time you need it
                 .AddSingleton(_config);
@@ -48,7 +47,7 @@ namespace OracleBot
             var provider = services.BuildServiceProvider();     // Create the service provider
 
             provider.GetRequiredService<LoggingService>();      // Initialize the logging service, startup service, and command handler
-            await provider.GetRequiredService<StartupService>().StartAsync();
+            await provider.GetRequiredService<StartupService>().StartAsync(provider);
             provider.GetRequiredService<CommandHandler>();
 
             await Task.Delay(-1);     // Prevent the application from closing

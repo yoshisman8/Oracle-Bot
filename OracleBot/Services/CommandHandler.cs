@@ -57,7 +57,7 @@ namespace OracleBot.Services
             if (msg.HasStringPrefix(_config["prefix"], ref argPos) || msg.HasMentionPrefix(_discord.CurrentUser, ref argPos))
             {
                 var result = await _commands.ExecuteAsync(context, argPos, _provider);     // Execute the command
-
+                
                 if (!result.IsSuccess && result.Error == CommandError.BadArgCount)  {
                     var DMs = await context.User.GetOrCreateDMChannelAsync();
                     string command = msg.Content.Split(' ')[0].Substring(1);
