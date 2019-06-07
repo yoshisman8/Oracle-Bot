@@ -13,48 +13,47 @@ using Discord.Addons.Interactive;
 
 namespace OracleBot.Classes 
 {
-    public class Character : InteractiveBase<SocketCommandContext>
+    public class Character
     {
         [BsonId]
         public int Id {get;set;}
-        [BsonRef("Players")]
         public ulong Owner {get;set;}
+        public ulong Guild {get;set;}
         public string Name {get;set;}
-        public AbilityScore[] AbilityScores {get;set;} = new AbilityScore[6];
+        public string Class {get;set;} //Entirely Cosmetic
+        public AbilityScore[] AbilityScores {get;set;} = new AbilityScore[7];
         public int Level {get;set;} = 1; //Determines the skill ranks cap
-        public int Armor {get;set;} = 0; //Flat mitigation of incomming damage
-        public Pool HealthPool {get;set;} = new Pool(10);
-        public Pool StaminaPool {get;set;} = new Pool(5);
-        public List<Skill> Skills {get;set;} = new List<Skill>
+        public Pool Stamina {get;set;} = new Pool();
+        public Pool Focus {get;set;} = new Pool();
+        public List<Skill> Skills {get;set;} = new List<Skill>()
         {
-            new Skill("Athletics","A measure of your general athleticism and physical endurance. Used when running, Jumping, climbing, swimming and doing similar activites.",SkillType.Physical),
-            new Skill("Acrobatics","A measure of your ability to move your body with grace, eleganceand dexteiry. Used during maneuvers such escaping grapples, moving through obstacles, making precies jumps, etc.",SkillType.Physical),
-            new Skill("Crush","A measure of our ability to efficiency crush and pulverize things or people.",SkillType.Physical),
-            new Skill("Slash","A measure of your ability to cut with sharp edges.",SkillType.Physical),
-            new Skill("Stab","A measure of your ability to puncture objets or people in vital locations.",SkillType.Physical),
-            new Skill("Aim","A measure of your ability to aim down and shoot down targets at a distance.",SkillType.Physical),
-            new Skill("Throw","A measure of your ability to throw objects with accurace and power.",SkillType.Physical),
-            new Skill("Block","A measure of the ability to properly brace yourself for incoming damage.",SkillType.Physical),
-            new Skill("Evade","A measure of your ability to move out of danger on time.",SkillType.Physical),
-            new Skill("Parry","A measure of your ability to receive an incomming damage using your own weapon and potentially performing a counter-attack.",SkillType.Physical),
-            new Skill("Ride","A measure of your ability to ride vehicles and animals.",SkillType.Physical),
-            new Skill("Stealth","A measure of your ability to move silently and undetected.",SkillType.Physical),
-            new Skill("Bluff","A measure of your ability to convince others to believe your intents, regardless of whether they're true or not.",SkillType.Mental),
-            new Skill("Diplomacy","A measure of your ability to calm down and talk reason into someone. Such as when trying to disengage a situation without violence or convince someone to see something through your point of view.",SkillType.Mental),
-            new Skill("Sense Motive","A measure of your ability to discern true intent behind people's actions and words.",SkillType.Mental),
-            new Skill("Perception","A measure of your ability to focus on and notice small, subtle details around you.",SkillType.Mental),
-            new Skill("Recall","A measure of your ability to recall details about information you know.", SkillType.Mental),
-            new Skill("Intimidate","A measure of your ability to exert pressure and terror on others.",SkillType.Mental)
+            new Skill{Name="Athletics",Scores=new Ability[]{Ability.Strength,Ability.Constitution}},
+            new Skill{Name="Acrobatics",Scores=new Ability[]{Ability.Agility,Ability.Dexterity}},
+            new Skill{Name="Crush",Scores=new Ability[]{Ability.Strength,Ability.Constitution}},
+            new Skill{Name="Slash",Scores=new Ability[]{Ability.STR,Ability.Dexterity}},
+            new Skill{Name="Stab",Scores=new Ability[]{Ability.Strength,Ability.Dexterity}},
+            new Skill{Name="Aim",Scores=new Ability[]{Ability.DEX,Ability.INT}},
+            new Skill{Name="Throw",Scores=new Ability[]{Ability.STR,Ability.Dexterity}},
+            new Skill{Name="Block",Scores=new Ability[]{Ability.Strength,Ability.Constitution}},
+            new Skill{Name="Evade",Scores=new Ability[]{Ability.AGI,Ability.DEX}},
+            new Skill{Name="Parry",Scores=new Ability[]{Ability.DEX,Ability.Intution}},
+            new Skill{Name="Ride",Scores=new Ability[]{Ability.DEX,Ability.Intution}},
+            new Skill{Name="Stealth",Scores=new Ability[]{Ability.DEX,Ability.Intution}},
+            new Skill{Name="Bluff",Scores=new Ability[]{Ability.DEX,Ability.Intution}},
+            new Skill{Name="Diplomacy",Scores=new Ability[]{Ability.DEX,Ability.Intution}},
+            new Skill{Name="Sense Motive",Scores=new Ability[]{Ability.DEX,Ability.Intution}},
+            new Skill{Name="Perception",Scores=new Ability[]{Ability.DEX,Ability.Intution}},
+            new Skill{Name="Recall",Scores=new Ability[]{Ability.DEX,Ability.Intution}},
+            new Skill{Name="Intimidate",Scores=new Ability[]{Ability.DEX,Ability.Intution}},
+            new Skill{Name="Survival",Scores=new Ability[]{Ability.DEX,Ability.Intution}},
+            new Skill{Name="Heal",Scores=new Ability[]{Ability.DEX,Ability.Intution}},
+            
         };
+        public int SkillRanks {get;set;} = 0;
         public List<Talent> Talents {get;set;} = new List<Talent>();
         public Inventory Inventory {get;set;} = new Inventory();
+      
 
-        
-        public void Save()
-        {
-            var Collection = Services.Database.GetCollection<Character>("Characters");
-            Collection.Update(this);
-        }
         public Result RankUp(Skill skill, int Ranks = 1)
         {
             if (skill.Ranks + Ranks > Level) return new Result(false,"This skill is already at the maximum rank it can be for your level!");
@@ -68,23 +67,12 @@ namespace OracleBot.Classes
     }
     public class AbilityScore
     {
-        public Ability Score {get;set;}
-        public int Value {get;set;}
-        public int Modifier
-        {
-            get
-            {
-                float value = (Modifier-10)/2;
-                if (value<0) return (int)Math.Ceiling(value);
-                else return (int)Math.Floor(value);
-            }
-            set
-            {
-            }
-        }
+        public int Value {get;set;} = 1;
+        public int Max {get;set;} = 7;
     }
     public class Inventory
     {
+        public int Armor {get;set;} = 0;
         public List<InvItem> Items {get;set;} = new List<InvItem>();
         public Item GetItem(string Name)
         {
@@ -117,17 +105,10 @@ namespace OracleBot.Classes
     }
     public class Pool
     {
-        public int MainMax {get;set;}
-        public int MainCurrent {get;set;}
-        public int SubMax {get;set;}
-        public int SubCurrent {get;set;}
-        public Pool(int PoolMax, int BurnMax = 4)
-        {
-            MainMax = PoolMax;
-            MainCurrent = MainMax;
-            SubMax = BurnMax;
-            SubCurrent = 0;
-        }
+        public int MainMax {get;set;} = 5;
+        public int MainCurrent {get;set;} = 5;
+        public int SubMax {get;set;} = 1;
+        public int SubCurrent {get;set;} = 0;
         public void TakeDamage(int Amount)
         {
             MainCurrent -= Amount;
@@ -158,46 +139,50 @@ namespace OracleBot.Classes
     {
         public string Name {get;set;}
         public int Ranks {get;set;}
+        public Ability[] Scores {get;set;} = new Ability[2];
         public string Description {get;set;}
-        public SkillType Type {get;set;}
-        [BsonIgnore]
-        private DiceParser DiceParser {get;} = new DiceParser();
-        public DiceResult Roll()
-        {
-            return DiceParser.Parse("2d6 + "+Ranks).Roll(); 
-        }
-        public Skill (string _Name, string _Description, SkillType _Type)
-        {
-            Name = _Name;
-            Description = _Description;
-            Type = _Type;
-        }
+        public bool Knowledge {get;set;} = false;
+
     }
     public class Talent
     {
         public string Name {get;set;}
         public string Description {get;set;}
-        public int Ranks {get;set;} = 1;
-        public Talent(string _Name, string _Description)
+        public int Level {get;set;} = 1;
+        public int TalentCost {get;set;} = 0;
+        public int RiskFactor {get;set;} = 0;
+        public Trigger TalentTrigger {get;set;} = 0;
+        public DamageType RiskDamage {get;set;}
+        
+        public enum Trigger {Simple, Complex, Reaction, Free}
+        public class Effect
         {
-            Name = _Name;
-            Description = _Description;
+            public string Name {get;set;}
+            public string Description {get;set;}
+            public int TP {get;set;}
+            public int RF {get;set;}
+        }
+        public class Modifier
+        {
+
         }
     }
-    public enum SkillType {Physical, Mental, Unafected}
+    public enum DamageType {Physical, Mental}
     public enum Ability 
     {
-        Might = 0, 
-        MGT = 0, 
-        Agility = 1, 
-        AGI = 1,
-        Endruance = 2,
-        END = 2,
-        Memory = 3,
-        MEM = 3,
-        Wisdom = 4,
-        WIS = 4,
-        Charisma =5,
+        Strength = 0, 
+        STR = 0, 
+        Dexterity = 1,
+        DEX = 1,
+        Agility = 2, 
+        AGI = 2,
+        Constitution = 3,
+        CON = 3,
+        Memory = 4,
+        MEM = 4,
+        Intution = 4,
+        INT = 4,
+        Charisma = 5,
         CHA = 5
         }
 }

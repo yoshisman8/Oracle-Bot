@@ -30,9 +30,9 @@ namespace OracleBot.Classes
         public async override Task<TypeReaderResult> ReadAsync(ICommandContext context, string input, IServiceProvider services)
         {
             var col = Services.Database.GetCollection<Character>("Characters");
-            List<Character> results = col.Find(x=>x.Name.StartsWith(input.ToLower())).ToList();
-            if (results.Count>0) return TypeReaderResult.FromError(CommandError.ParseFailed,"There is no character whose name begins with \""+input+"\"");
-            return TypeReaderResult.FromSuccess(results);
+            var results = context.Guild!= null? col.Find(x=>x.Name.StartsWith(input.ToLower())&&x.Guild == context.Guild.Id):col.Find(x=>x.Name.StartsWith(input.ToLower()));
+            if (results.Count()>0) return TypeReaderResult.FromError(CommandError.ParseFailed,"There is no character whose name begins with \""+input+"\"");
+            return TypeReaderResult.FromSuccess(results.ToArray());
         }
     }
     public class RequiresLockedChar : PreconditionAttribute
